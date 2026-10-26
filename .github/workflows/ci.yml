@@ -1,0 +1,15 @@
+cache:
+  paths:
+    - .m2/repository
+
+.verify:
+  stage: test
+  script:
+    - 'mvn $MAVEN_CLI_OPTS verify'
+
+verify:
+  extends:
+    - .verify
+
+on:
+jobs:

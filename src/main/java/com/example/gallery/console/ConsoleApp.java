@@ -1,9 +1,6 @@
 package com.example.gallery.console;
 
-import com.example.gallery.models.Author;
-import com.example.gallery.models.Category;
-import com.example.gallery.models.Exhibition;
-import com.example.gallery.models.ExhibitionType;
+import com.example.gallery.models.*;
 import com.example.gallery.repository.AuthorRepository;
 import com.example.gallery.repository.CategoryRepository;
 import com.example.gallery.repository.ExhibitRepository;
@@ -46,19 +43,23 @@ public class ConsoleApp {
         AuthService authService = new AuthService(userService, userRepository);
         AuthorService authorService = new AuthorService(authorRepository);
         CategoryService categoryService = new CategoryService(categoryRepository);
-        ExhibitService exhibitService = new ExhibitService(exhibitRepository, authorRepository, categoryRepository);
+        MultiThreadService multiThreadService = new MultiThreadService();
+
+        ExhibitService exhibitService = new ExhibitService(
+                exhibitRepository, authorRepository, categoryRepository, multiThreadService);
+
         ExhibitionService exhibitionService = new ExhibitionService(exhibitionRepository, exhibitRepository);
         ReviewService reviewService = new ReviewService(reviewRepository, userRepository, exhibitionRepository);
         TicketService ticketService = new TicketService(ticketRepository, userRepository, exhibitionRepository);
-        MultiThreadService multiThreadService = new MultiThreadService();
 
-        initializeData(authorService, categoryService, exhibitionService);
+        initializeData(authorService, categoryService, exhibitionService, exhibitService);
 
         Session session = new Session();
         AuthMenu authMenu = new AuthMenu(authService, session, console);
-        MainMenu mainMenu = new MainMenu(session, console, userService, authorService,
+        MainMenu mainMenu = new MainMenu(session, console, //userService,
+                authorService,
                 categoryService, exhibitService, exhibitionService, reviewService,
-                ticketService, multiThreadService);
+                ticketService);
 
         while (true) {
             authMenu.show();
@@ -71,7 +72,7 @@ public class ConsoleApp {
     }
 
     private void initializeData(AuthorService authorService, CategoryService categoryService,
-                                ExhibitionService exhibitionService) {
+                                ExhibitionService exhibitionService, ExhibitService exhibitService) {
         categoryService.createCategory(new Category(1L, "Painting"));
         categoryService.createCategory(new Category(2L, "Original graphics"));
         categoryService.createCategory(new Category(3L, "Sculpture"));
@@ -103,5 +104,16 @@ public class ConsoleApp {
                 ExhibitionType.TEMPORARY, "New Tretyakov",
                 java.time.LocalDate.of(2025, 6, 10),
                 java.time.LocalDate.of(2026, 1, 18)));
+
+        Author aivazovsky = authorService.getAuthor(1L).orElseThrow();
+        Category painting = categoryService.getCategory(1L).orElseThrow();
+
+        exhibitService.createExhibit(new Exhibit(1L, "The Ninth Wave", "INV-001", 1850,
+                "221x332", "Oil on canvas", "Painting", "Hall 1", aivazovsky, painting));
+        exhibitService.createExhibit(new Exhibit(2L, "Black Sea", "INV-002", 1881,
+                "150x200", "Oil on canvas", "Painting", "Hall 2", aivazovsky, painting));
+        exhibitService.createExhibit(new Exhibit(3L, "Bogatyrs", "INV-003", 1898,
+                "295x446", "Oil on canvas", "Painting", "Hall 3",
+                authorService.getAuthor(2L).orElseThrow(), painting));
     }
 }

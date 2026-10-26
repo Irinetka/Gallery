@@ -1,16 +1,23 @@
 package com.example.gallery.models;
 
+import lombok.Getter;
+import lombok.Setter;
+
 import java.time.LocalDateTime;
 
+@Getter
 public class Review {
+    @Setter
     private Long id;
-    private User visitor;
+    private final User visitor;
+    //public void setVisitor(User visitor) { this.visitor = visitor; }
+    @Setter
     private Exhibition exhibition;
-    private String content;
-    private Integer rating;
-    private LocalDateTime createdAt;
-
-    public Review() {}
+    private final String content;
+    //public void setContent(String content) { this.content = content; }
+    private final Integer rating;
+    //public void setRating(Integer rating) { this.rating = rating; }
+    private final LocalDateTime createdAt;
 
     public Review(Long id, User visitor, Exhibition exhibition, String content, Integer rating) {
         this.id = id;
@@ -21,16 +28,5 @@ public class Review {
         this.createdAt = LocalDateTime.now();
     }
 
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
-    public User getVisitor() { return visitor; }
-    public void setVisitor(User visitor) { this.visitor = visitor; }
-    public Exhibition getExhibition() { return exhibition; }
-    public void setExhibition(Exhibition exhibition) { this.exhibition = exhibition; }
-    public String getContent() { return content; }
-    public void setContent(String content) { this.content = content; }
-    public Integer getRating() { return rating; }
-    public void setRating(Integer rating) { this.rating = rating; }
-    public LocalDateTime getCreatedAt() { return createdAt; }
-    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+    // public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 }
