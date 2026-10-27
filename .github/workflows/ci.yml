@@ -8,8 +8,8 @@ on:
 
   pull_request:
     branches:
-      - main
-      - develop
+      - master
+      - lab1-gallery
 
 jobs:
 
@@ -32,5 +32,4 @@ jobs:
       - name: Run unit tests
         run: mvn clean test
 
-      - name: Run unit tests
-        run: mvn test -Dtest=com.example.gallery.service.MultiThreadTest -DfailFast
+
