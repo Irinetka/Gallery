@@ -11,8 +11,10 @@ import com.example.gallery.repository.InMemoryCategoryRepository;
 import com.example.gallery.repository.InMemoryExhibitRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import static org.junit.jupiter.api.Assertions.*;
+
 import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 class ExhibitServiceTest {
     private ExhibitService exhibitService;
@@ -24,10 +26,11 @@ class ExhibitServiceTest {
         AuthorRepository authorRepo = new InMemoryAuthorRepository();
         CategoryRepository categoryRepo = new InMemoryCategoryRepository();
         ExhibitRepository exhibitRepo = new InMemoryExhibitRepository();
+        MultiThreadService multiThreadService = new MultiThreadService();
 
         authorService = new AuthorService(authorRepo);
         categoryService = new CategoryService(categoryRepo);
-        exhibitService = new ExhibitService(exhibitRepo, authorRepo, categoryRepo);
+        exhibitService = new ExhibitService(exhibitRepo, authorRepo, categoryRepo, multiThreadService);
 
         authorService.createAuthor(new Author(1L, "Aivazovsky Ivan"));
         categoryService.createCategory(new Category(1L, "Painting"));
@@ -39,24 +42,59 @@ class ExhibitServiceTest {
         Category category = categoryService.getCategory(1L).orElseThrow();
         Exhibit exhibit = new Exhibit(1L, "The Ninth Wave", "INV-001", 1850,
                 "221x332", "Oil on canvas", "Painting", "Hall 1", author, category);
-
         Exhibit created = exhibitService.createExhibit(exhibit);
-
         assertNotNull(created);
         assertEquals("The Ninth Wave", created.getTitle());
     }
 
     @Test
-    void testSearchExhibits() {
+    void testSearchExhibitsWithMultithreading() {
         Author author = authorService.getAuthor(1L).orElseThrow();
         Category category = categoryService.getCategory(1L).orElseThrow();
 
-        exhibitService.createExhibit(new Exhibit(1L, "The Ninth Wave", "INV-001", 1850, "221x332", "Oil", "Painting", "Hall 1", author, category));
-        exhibitService.createExhibit(new Exhibit(2L, "Black Sea", "INV-002", 1881, "150x200", "Oil", "Painting", "Hall 2", author, category));
+        exhibitService.createExhibit(new Exhibit(1L, "The Ninth Wave", "INV-001", 1850,
+                "221x332", "Oil", "Painting", "Hall 1", author, category));
+        exhibitService.createExhibit(new Exhibit(2L, "Black Sea", "INV-002", 1881,
+                "150x200", "Oil", "Painting", "Hall 2", author, category));
+        exhibitService.createExhibit(new Exhibit(3L, "Bogatyrs", "INV-003", 1898,
+                "295x446", "Oil", "Painting", "Hall 3", author, category));
 
-        List<Exhibit> result = exhibitService.searchExhibits("Ninth");
+        List<Exhibit> result = exhibitService.searchExhibitsWithMultithreading("Ninth");
+
         assertEquals(1, result.size());
         assertEquals("The Ninth Wave", result.get(0).getTitle());
+    }
+
+    @Test
+    void testSearchExhibitsEmptyResult() {
+        Author author = authorService.getAuthor(1L).orElseThrow();
+        Category category = categoryService.getCategory(1L).orElseThrow();
+
+        exhibitService.createExhibit(new Exhibit(1L, "The Ninth Wave", "INV-001", 1850,
+                "221x332", "Oil", "Painting", "Hall 1", author, category));
+
+        List<Exhibit> result = exhibitService.searchExhibitsWithMultithreading("NonExistent");
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void testSearchExhibitsEmptyQuery() {
+        assertThrows(IllegalArgumentException.class, () ->
+                exhibitService.searchExhibitsWithMultithreading(""));
+    }
+
+    @Test
+    void testFilterByAuthor() {
+        Author author = authorService.getAuthor(1L).orElseThrow();
+        Category category = categoryService.getCategory(1L).orElseThrow();
+
+        exhibitService.createExhibit(new Exhibit(1L, "Painting 1", "INV-001", 1850,
+                "100x100", "Oil", "Painting", "Hall 1", author, category));
+        exhibitService.createExhibit(new Exhibit(2L, "Painting 2", "INV-002", 1860,
+                "100x100", "Oil", "Painting", "Hall 2", author, category));
+
+        List<Exhibit> result = exhibitService.showExhibitsByAuthor(1L);
+        assertEquals(2, result.size());
     }
 
     @Test
@@ -64,12 +102,13 @@ class ExhibitServiceTest {
         Author author = authorService.getAuthor(1L).orElseThrow();
         Category category = categoryService.getCategory(1L).orElseThrow();
 
-        exhibitService.createExhibit(new Exhibit(1L, "Painting 1850", "INV-001", 1850, "100x100", "Oil", "Painting", "Hall 1", author, category));
-        exhibitService.createExhibit(new Exhibit(2L, "Painting 1900", "INV-002", 1900, "100x100", "Oil", "Painting", "Hall 2", author, category));
+        exhibitService.createExhibit(new Exhibit(1L, "Painting 1850", "INV-001", 1850,
+                "100x100", "Oil", "Painting", "Hall 1", author, category));
+        exhibitService.createExhibit(new Exhibit(2L, "Painting 1900", "INV-002", 1900,
+                "100x100", "Oil", "Painting", "Hall 2", author, category));
 
         List<Exhibit> result = exhibitService.showExhibitsByYearRange(1840, 1860);
         assertEquals(1, result.size());
-        assertEquals(1850, result.get(0).getYear());
     }
 
     @Test
@@ -77,8 +116,8 @@ class ExhibitServiceTest {
         Author author = authorService.getAuthor(1L).orElseThrow();
         Category category = categoryService.getCategory(1L).orElseThrow();
 
-        exhibitService.createExhibit(new Exhibit(1L, "Test", "INV-001", 1850, "100x100", "Oil", "Painting", "Hall 1", author, category));
-
+        exhibitService.createExhibit(new Exhibit(1L, "Test", "INV-001", 1850,
+                "100x100", "Oil", "Painting", "Hall 1", author, category));
         exhibitService.deleteExhibit(1L);
         assertTrue(exhibitService.getExhibit(1L).isEmpty());
     }

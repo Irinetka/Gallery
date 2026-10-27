@@ -76,7 +76,7 @@ public class ExhibitMenu {
 
     private void search() {
         String query = console.readString("Search query: ");
-        List<Exhibit> exhibits = exhibitService.searchExhibits(query);
+        List<Exhibit> exhibits = exhibitService.searchExhibitsWithMultithreading(query);
         System.out.println();
         System.out.println("Search results");
         if (exhibits.isEmpty()) {
