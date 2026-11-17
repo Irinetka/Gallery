@@ -6,6 +6,7 @@ import com.example.gallery.models.Exhibit;
 import com.example.gallery.service.AuthorService;
 import com.example.gallery.service.CategoryService;
 import com.example.gallery.service.ExhibitService;
+
 import java.util.List;
 
 public class ExhibitMenu {
@@ -143,7 +144,14 @@ public class ExhibitMenu {
         console.pause();
     }
 
+    // ПРОВЕРКА ПРАВ: только Admin и Manager могут создавать экспонаты
     private void create() {
+        if (!session.getCurrentUser().canManageExhibits()) {
+            System.out.println("Access denied. Only Admin and Manager can create exhibits.");
+            console.pause();
+            return;
+        }
+
         Long id = console.readLong("New exhibit ID: ");
         String title = console.readNonBlankString("Title: ");
         String inventoryNumber = console.readString("Inventory number: ");
@@ -187,11 +195,17 @@ public class ExhibitMenu {
         System.out.println();
         System.out.println("Exhibit");
         printExhibit(exhibit);
-        System.out.println("Reviews: " + exhibit.getReviews().size());
         console.pause();
     }
 
+    // ПРОВЕРКА ПРАВ: только Admin и Manager могут удалять экспонаты
     private void delete() {
+        if (!session.getCurrentUser().canManageExhibits()) {
+            System.out.println("Access denied. Only Admin and Manager can delete exhibits.");
+            console.pause();
+            return;
+        }
+
         Long id = console.readLong("Exhibit ID: ");
         exhibitService.deleteExhibit(id);
         System.out.println("Exhibit deleted.");

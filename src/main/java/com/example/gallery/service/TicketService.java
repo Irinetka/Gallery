@@ -6,36 +6,31 @@ import com.example.gallery.models.User;
 import com.example.gallery.repository.ExhibitionRepository;
 import com.example.gallery.repository.TicketRepository;
 import com.example.gallery.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Optional;
 
+@Service
+@RequiredArgsConstructor
 public class TicketService {
     private final TicketRepository ticketRepository;
     private final UserRepository userRepository;
     private final ExhibitionRepository exhibitionRepository;
 
-    public TicketService(TicketRepository ticketRepository,
-                         UserRepository userRepository,
-                         ExhibitionRepository exhibitionRepository) {
-        this.ticketRepository = ticketRepository;
-        this.userRepository = userRepository;
-        this.exhibitionRepository = exhibitionRepository;
-    }
-
+    @Transactional
     public Ticket createTicket(Ticket ticket) {
         validateTicket(ticket);
         if (ticketRepository.findById(ticket.getId()).isPresent())
             throw new IllegalStateException("Ticket with id " + ticket.getId() + " already exists");
-
         User visitor = userRepository.findById(ticket.getVisitor().getId())
                 .orElseThrow(() -> new IllegalArgumentException("Visitor not found"));
         Exhibition exhibition = exhibitionRepository.findById(ticket.getExhibition().getId())
                 .orElseThrow(() -> new IllegalArgumentException("Exhibition not found"));
-
-        Ticket created = ticketRepository.create(ticket);
-        visitor.addTicket(created);
-        exhibition.getTickets().add(created);
-        return created;
+        ticket.setVisitor(visitor);
+        ticket.setExhibition(exhibition);
+        return ticketRepository.save(ticket);
     }
 
     public Optional<Ticket> getTicket(Long id) {
@@ -57,13 +52,33 @@ public class TicketService {
         return ticketRepository.findByExhibitionId(exhibitionId);
     }
 
+    public List<Ticket> search(Long visitorId, Long exhibitionId) {
+        if (visitorId != null && exhibitionId != null)
+            return ticketRepository.findAll().stream()
+                    .filter(t -> t.getVisitor().getId().equals(visitorId))
+                    .filter(t -> t.getExhibition().getId().equals(exhibitionId))
+                    .toList();
+        if (visitorId != null) return ticketRepository.findByVisitorId(visitorId);
+        if (exhibitionId != null) return ticketRepository.findByExhibitionId(exhibitionId);
+        return ticketRepository.findAll();
+    }
+
+    @Transactional
+    public Ticket update(Long id, Ticket ticket) {
+        validateId(id);
+        Ticket existing = ticketRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Ticket not found"));
+        if (ticket.getVisitDateTime() != null) existing.setVisitDateTime(ticket.getVisitDateTime());
+        if (ticket.getPrice() != null) existing.setPrice(ticket.getPrice());
+        return ticketRepository.save(existing);
+    }
+
+    @Transactional
     public void deleteTicket(Long id) {
         validateId(id);
-        Ticket ticket = ticketRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Ticket with id " + id + " not found"));
-        if (ticket.getVisitor() != null) ticket.getVisitor().getTickets().remove(ticket);
-        if (ticket.getExhibition() != null) ticket.getExhibition().getTickets().remove(ticket);
-        ticketRepository.delete(id);
+        if (ticketRepository.findById(id).isEmpty())
+            throw new IllegalArgumentException("Ticket not found");
+        ticketRepository.deleteById(id);
     }
 
     private void validateTicket(Ticket ticket) {
@@ -80,6 +95,6 @@ public class TicketService {
     }
 
     private void validateId(Long id) {
-        if (id == null || id <= 0) throw new IllegalArgumentException("Id must be a positive number");
+        if (id == null || id <= 0) throw new IllegalArgumentException("Id must be positive");
     }
 }

@@ -1,5 +1,6 @@
 package com.example.gallery.console;
 
+import com.example.gallery.models.UserRole;
 import com.example.gallery.models.User;
 import com.example.gallery.service.AuthService;
 
@@ -75,29 +76,26 @@ public class AuthMenu {
 
     // Метод register — регистрирует нового пользователя типа CustomerUser
     private void register() {
-        // Выводится заголовок раздела
         System.out.println();
         System.out.println("Register");
-        // Считываются данные нового пользователя через console
+
         Long id = console.readLong("Enter user ID: ");
         String username = console.readNonBlankString("Enter username: ");
         String email = console.readEmail("Enter email: ");
         String password = console.readPassword("Enter password: ");
         String confirmPassword = console.readPassword("Confirm password: ");
 
-        // Проверяется совпадение введённых паролей
         if (!password.equals(confirmPassword)) {
-            // Если пароли не совпадают — регистрация отменяется
             System.out.println("Passwords do not match. Registration cancelled.");
             console.pause();
             return;
         }
 
-        // Вызывается метод register сервиса authService — создаётся новый пользователь
-        User user = authService.register(id, username, email, password);
-        // Вызывается метод login сессии — новый пользователь автоматически входит в систему
+        // Передаём все 7 аргументов: role = CUSTOMER, fullName = username, specialization = null
+        User user = authService.register(id, username, email, password,
+                UserRole.CUSTOMER, username, null);
+
         session.login(user);
-        // Выводится сообщение об успешной регистрации
         System.out.println("Registration successful!");
         System.out.println("Welcome, " + user.getUsername() + "!");
     }

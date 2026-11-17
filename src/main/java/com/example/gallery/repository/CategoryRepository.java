@@ -1,12 +1,11 @@
 package com.example.gallery.repository;
 
 import com.example.gallery.models.Category;
-import java.util.List;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
 import java.util.Optional;
 
-public interface CategoryRepository {
-    Category create(Category category);
-    Optional<Category> findById(Long id);
-    List<Category> findAll();
-    void delete(Long id);
+@Repository
+public interface CategoryRepository extends JpaRepository<Category, Long> {
+    Optional<Category> findByName(String name);
 }
