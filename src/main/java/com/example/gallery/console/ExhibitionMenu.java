@@ -21,16 +21,9 @@ public class ExhibitionMenu {
     public void show() {
         while (session.isAuthenticated()) {
             System.out.println();
-            System.out.println("EXHIBITIONS");
             System.out.println("1. Show all exhibitions");
-            System.out.println("2. Permanent exhibitions");
             System.out.println("3. Temporary exhibitions");
-            System.out.println("4. Create exhibition");
             System.out.println("5. Open exhibition");
-            System.out.println("6. Add tag");
-            System.out.println("7. Remove tag");
-            System.out.println("8. Delete exhibition");
-            System.out.println("0. Back");
 
             String choice = console.readString("Select action: ");
 
@@ -44,7 +37,9 @@ public class ExhibitionMenu {
                     case "6" -> addTag();
                     case "7" -> removeTag();
                     case "8" -> delete();
-                    case "0" -> { return; }
+                    case "0" -> {
+                        return;
+                    }
                     default -> System.out.println("Unknown command.");
                 }
             } catch (IllegalArgumentException | IllegalStateException e) {

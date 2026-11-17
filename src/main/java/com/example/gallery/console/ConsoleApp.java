@@ -27,6 +27,7 @@ import com.example.gallery.service.UserService;
 import java.util.Scanner;
 
 public class ConsoleApp {
+    //создаёт все зависимости,инициализирует тестовые данные
     public void start() {
         Scanner scanner = new Scanner(System.in);
         ConsoleUtils console = new ConsoleUtils(scanner);

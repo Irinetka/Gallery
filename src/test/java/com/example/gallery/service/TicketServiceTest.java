@@ -12,16 +12,33 @@ import com.example.gallery.repository.InMemoryUserRepository;
 import com.example.gallery.repository.TicketRepository;
 import com.example.gallery.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import static org.junit.jupiter.api.Assertions.*;
+
 import java.time.LocalDateTime;
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.*;
+
+/**
+ * Unit-тесты сервиса управления билетами (TicketService).
+ *
+ * Проверяются:
+ *  - покупка билета с корректной ценой и датой визита;
+ *  - запрет отрицательной цены;
+ *  - получение списка билетов конкретного посетителя.
+ */
+@DisplayName("Тесты сервиса билетов")
 class TicketServiceTest {
+
     private TicketService ticketService;
     private UserRepository userRepository;
     private ExhibitionRepository exhibitionRepository;
 
+    /**
+     * Подготовка: посетитель (id=1) и временная выставка (id=1),
+     * которая идёт с текущего дня ещё 10 дней.
+     */
     @BeforeEach
     void setUp() {
         userRepository = new InMemoryUserRepository();
@@ -33,11 +50,19 @@ class TicketServiceTest {
         User user = new CustomerUser(1L, "visitor", "v@mail.com", "pass", "Visitor Name");
         userRepository.create(user);
 
-        Exhibition exhibition = new Exhibition(1L, "Art Show", ExhibitionType.TEMPORARY, "Hall 1", LocalDateTime.now().toLocalDate(), LocalDateTime.now().toLocalDate().plusDays(10));
+        Exhibition exhibition = new Exhibition(1L, "Art Show", ExhibitionType.TEMPORARY, "Hall 1",
+                LocalDateTime.now().toLocalDate(),
+                LocalDateTime.now().toLocalDate().plusDays(10));
         exhibitionRepository.create(exhibition);
     }
 
+    /**
+     * Успешная покупка билета.
+     * Ожидание: цена (500.0) и дата/время визита сохранены корректно;
+     * билет добавлен в списки посетителя и выставки.
+     */
     @Test
+    @DisplayName("Покупка билета с корректной ценой и датой визита")
     void testCreateTicket() {
         User user = userRepository.findById(1L).orElseThrow();
         Exhibition exhibition = exhibitionRepository.findById(1L).orElseThrow();
@@ -51,7 +76,13 @@ class TicketServiceTest {
         assertEquals(visitTime, created.getVisitDateTime());
     }
 
+    /**
+     * Покупка билета с отрицательной ценой (-100.0).
+     * Ожидание: IllegalArgumentException("Ticket price must be positive") —
+     * цена билета должна быть строго положительной.
+     */
     @Test
+    @DisplayName("Покупка билета с отрицательной ценой")
     void testCreateTicketInvalidPrice() {
         User user = userRepository.findById(1L).orElseThrow();
         Exhibition exhibition = exhibitionRepository.findById(1L).orElseThrow();
@@ -61,15 +92,23 @@ class TicketServiceTest {
         assertThrows(IllegalArgumentException.class, () -> ticketService.createTicket(ticket));
     }
 
+    /**
+     * Получение списка билетов посетителя.
+     * Один посетитель покупает 2 билета на одну выставку с разными датами.
+     * Ожидание: findByVisitorId вернёт 2 записи (фильтрация через Stream API).
+     */
     @Test
+    @DisplayName("Получение списка билетов посетителя")
     void testShowVisitorTickets() {
         User user = userRepository.findById(1L).orElseThrow();
         Exhibition exhibition = exhibitionRepository.findById(1L).orElseThrow();
 
         ticketService.createTicket(new Ticket(1L, user, exhibition, LocalDateTime.now(), 500.0));
-        ticketService.createTicket(new Ticket(2L, user, exhibition, LocalDateTime.now().plusDays(1), 600.0));
+        ticketService.createTicket(new Ticket(2L, user, exhibition,
+                LocalDateTime.now().plusDays(1), 600.0));
 
         List<Ticket> tickets = ticketService.showVisitorTickets(1L);
+
         assertEquals(2, tickets.size());
     }
 }

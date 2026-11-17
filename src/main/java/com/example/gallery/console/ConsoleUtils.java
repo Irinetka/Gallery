@@ -48,7 +48,6 @@ public class ConsoleUtils {
         while (true) {
             String password = readString(message);
             if (password == null || password.isBlank()) {
-                System.out.println("Password cannot be empty. Try again.");
                 continue;
             }
             return password;
@@ -59,7 +58,6 @@ public class ConsoleUtils {
         while (true) {
             String value = readString(message);
             if (value == null || value.isBlank()) {
-                System.out.println("Field cannot be empty. Try again.");
                 continue;
             }
             return value;
@@ -70,11 +68,9 @@ public class ConsoleUtils {
         while (true) {
             String email = readString(message);
             if (email == null || email.isBlank()) {
-                System.out.println("Email cannot be empty. Try again.");
                 continue;
             }
             if (!email.contains("@") || !email.contains(".")) {
-                System.out.println("Invalid email format. Example: user@example.com");
                 continue;
             }
             return email;
