@@ -1,40 +1,33 @@
 package com.example.gallery.models;
 
+import jakarta.persistence.*;
+import lombok.*;
 import java.util.ArrayList;
 import java.util.List;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
-// Класс Category — модель категории экспоната
+@Entity
+@Table(name = "categories")
+@Getter
+@Setter
+@NoArgsConstructor
 public class Category {
 
-    // Поле id — идентификатор категории
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    // Поле name — название категории
+
+    @Column(nullable = false, unique = true, length = 100)
     private String name;
-    // Поле exhibits — список экспонатов данной категории
-    private final List<Exhibit> exhibits = new ArrayList<>();
 
-    // Конструктор по умолчанию
-    public Category() {}
+    @OneToMany(mappedBy = "category", cascade = CascadeType.ALL)
+    private List<Exhibit> exhibits = new ArrayList<>();
 
-    // Конструктор с параметрами — инициализируются id и name
+    //  конструктор с двумя параметрами
     public Category(Long id, String name) {
         this.id = id;
         this.name = name;
     }
-
-    // Геттер — возвращается id
-    public Long getId() { return id; }
-    // Сеттер — устанавливается id
-    public void setId(Long id) { this.id = id; }
-
-    // Геттер — возвращается name
-    public String getName() { return name; }
-    // Сеттер — устанавливается name
-    public void setName(String name) { this.name = name; }
-
-    // Геттер — возвращается список exhibits
-    public List<Exhibit> getExhibits() { return exhibits; }
-
-    // Метод — добавляется exhibit в список exhibits
-    public void addExhibit(Exhibit exhibit) { exhibits.add(exhibit); }
 }

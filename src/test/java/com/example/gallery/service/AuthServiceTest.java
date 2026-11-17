@@ -1,133 +1,98 @@
 package com.example.gallery.service;
 
+import com.example.gallery.models.CustomerUser;
 import com.example.gallery.models.User;
 import com.example.gallery.models.UserRole;
-import com.example.gallery.repository.InMemoryUserRepository;
 import com.example.gallery.repository.UserRepository;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.springframework.boot.test.context.SpringBootTest;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 /**
- * Unit-тесты сервиса аутентификации и регистрации (AuthService).
- *
- * Проверяются:
- *  - регистрация нового пользователя (всегда с ролью CUSTOMER);
- *  - уникальность id и username;
- *  - валидация обязательных полей;
- *  - вход в систему по логину и паролю, в том числе негативные сценарии.
+ * Тесты для AuthService.
+ * Использует @SpringBootTest + Mockito (без подключения к БД).
  */
-@DisplayName("Тесты сервиса аутентификации")
+@SpringBootTest
 class AuthServiceTest {
 
+    @Mock
     private UserRepository userRepository;
+
+    @Mock
     private UserService userService;
+
+    @InjectMocks
     private AuthService authService;
 
-    /**
-     * AuthService зависит от UserService и UserRepository,
-     * поэтому в setUp собираемся вся цепочка зависимостей на in-memory хранилище.
-     */
-    @BeforeEach
-    void setUp() {
-        userRepository = new InMemoryUserRepository();
-        userService = new UserService(userRepository);
-        authService = new AuthService(userService, userRepository);
-    }
-
-    /**
-     * Успешная регистрация посетителя.
-     * Ожидание: пользователь создан, username сохранён,
-     * роль автоматически установлена CUSTOMER (самостоятельная регистрация
-     * администраторов и менеджеров запрещена по логике приложения).
-     */
     @Test
-    @DisplayName("Успешная регистрация пользователя с ролью CUSTOMER")
     void testRegisterSuccess() {
-        User user = authService.register(1L, "testuser", "test@example.com", "password123");
+        User user = new CustomerUser(1L, "testuser", "test@example.com", "password123", "Test User");
+        when(userRepository.findById(1L)).thenReturn(java.util.Optional.empty());
+        when(userRepository.findByUsername("testuser")).thenReturn(java.util.Optional.empty());
+        when(userService.createUser(any())).thenReturn(user);
 
-        assertNotNull(user);
-        assertEquals("testuser", user.getUsername());
-        assertEquals(UserRole.CUSTOMER, user.getRole());
+        User created = authService.register(1L, "testuser", "test@example.com", "password123",
+                UserRole.CUSTOMER, "Test User", null);
+
+        assertNotNull(created);
+        assertEquals("testuser", created.getUsername());
+        assertEquals("CUSTOMER", created.getRole());
     }
 
-    /**
-     * Регистрация с уже занятым id при другом username.
-     * Ожидание: IllegalStateException — первичный ключ должен быть уникальным.
-     */
     @Test
-    @DisplayName("Регистрация с дублирующимся id")
     void testRegisterDuplicateId() {
-        authService.register(1L, "user1", "user1@example.com", "password123");
+        when(userRepository.findById(1L)).thenReturn(java.util.Optional.of(new CustomerUser()));
 
         assertThrows(IllegalStateException.class, () ->
-                authService.register(1L, "user2", "user2@example.com", "password123"));
+                authService.register(1L, "user2", "user2@example.com", "password123",
+                        UserRole.CUSTOMER, null, null));
     }
 
-    /**
-     * Регистрация с уже занятым username при другом id.
-     * Ожидание: IllegalStateException — логин должен быть уникальным,
-     * иначе аутентификация по username станет неоднозначной.
-     */
     @Test
-    @DisplayName("Регистрация с дублирующимся username")
     void testRegisterDuplicateUsername() {
-        authService.register(1L, "testuser", "user1@example.com", "password123");
+        when(userRepository.findById(1L)).thenReturn(java.util.Optional.empty());
+        when(userRepository.findByUsername("testuser")).thenReturn(java.util.Optional.of(new CustomerUser()));
 
         assertThrows(IllegalStateException.class, () ->
-                authService.register(2L, "testuser", "user2@example.com", "password123"));
+                authService.register(2L, "testuser", "user2@example.com", "password123",
+                        UserRole.CUSTOMER, null, null));
     }
 
-    /**
-     * Регистрация с пустым паролем.
-     * Ожидание: IllegalArgumentException — пароль обязателен.
-     */
     @Test
-    @DisplayName("Регистрация с пустым паролем")
     void testRegisterEmptyPassword() {
         assertThrows(IllegalArgumentException.class, () ->
-                authService.register(1L, "user", "user@example.com", ""));
+                authService.register(1L, "user", "user@example.com", "",
+                        UserRole.CUSTOMER, null, null));
     }
 
-    /**
-     * Успешный вход в систему с верной парой логин/пароль.
-     * Ожидание: возвращён тот же пользователь, который был зарегистрирован.
-     */
     @Test
-    @DisplayName("Успешный вход в систему")
     void testLoginSuccess() {
-        authService.register(1L, "testuser", "test@example.com", "password123");
+        User user = new CustomerUser(1L, "testuser", "test@example.com", "password123", "Test User");
+        when(userRepository.findByUsername("testuser")).thenReturn(java.util.Optional.of(user));
 
-        User user = authService.login("testuser", "password123");
+        User loggedIn = authService.login("testuser", "password123");
 
-        assertNotNull(user);
-        assertEquals("testuser", user.getUsername());
+        assertNotNull(loggedIn);
+        assertEquals("testuser", loggedIn.getUsername());
     }
 
-    /**
-     * Вход с неверным паролем.
-     * Ожидание: IllegalArgumentException("Invalid credentials").
-     * Сообщение намеренно общее — не раскрывает, что именно неверно (логин или пароль).
-     */
     @Test
-    @DisplayName("Вход с неверным паролем")
     void testLoginWrongPassword() {
-        authService.register(1L, "testuser", "test@example.com", "password123");
+        User user = new CustomerUser(1L, "testuser", "test@example.com", "password123", "Test User");
+        when(userRepository.findByUsername("testuser")).thenReturn(java.util.Optional.of(user));
 
         assertThrows(IllegalArgumentException.class, () ->
                 authService.login("testuser", "wrongpassword"));
     }
 
-    /**
-     * Вход несуществующего пользователя.
-     * Ожидание: IllegalArgumentException("Invalid credentials") —
-     * пустой Optional от findByUsername преобразуется в исключение.
-     */
     @Test
-    @DisplayName("Вход несуществующего пользователя")
     void testLoginNonExistentUser() {
+        when(userRepository.findByUsername("nobody")).thenReturn(java.util.Optional.empty());
+
         assertThrows(IllegalArgumentException.class, () ->
                 authService.login("nobody", "password123"));
     }

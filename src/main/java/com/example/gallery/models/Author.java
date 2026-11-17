@@ -1,40 +1,33 @@
 package com.example.gallery.models;
 
+import jakarta.persistence.*;
+import lombok.*;
 import java.util.ArrayList;
 import java.util.List;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
-// Класс Author — модель автора произведения
+@Entity
+@Table(name = "authors")
+@Getter
+@Setter
+@NoArgsConstructor
 public class Author {
 
-    // Поле id — идентификатор автора
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    // Поле fullName — полное имя автора
+
+    @Column(name = "full_name", nullable = false, unique = true, length = 150)
     private String fullName;
-    // Поле exhibits — список экспонатов автора (инициализируется пустым ArrayList)
-    private final List<Exhibit> exhibits = new ArrayList<>();
 
-    // Конструктор по умолчанию
-    public Author() {}
+    @OneToMany(mappedBy = "author", cascade = CascadeType.ALL)
+    private List<Exhibit> exhibits = new ArrayList<>();
 
-    // Конструктор с параметрами — инициализируются id и fullName
+    //  Явный конструктор с двумя параметрами
     public Author(Long id, String fullName) {
         this.id = id;
         this.fullName = fullName;
     }
-
-    // Геттер — возвращается id
-    public Long getId() { return id; }
-    // Сеттер — устанавливается id
-    public void setId(Long id) { this.id = id; }
-
-    // Геттер — возвращается fullName
-    public String getFullName() { return fullName; }
-    // Сеттер — устанавливается fullName
-    public void setFullName(String fullName) { this.fullName = fullName; }
-
-    // Геттер — возвращается список exhibits
-    public List<Exhibit> getExhibits() { return exhibits; }
-
-    // Метод — добавляется exhibit в список exhibits
-    public void addExhibit(Exhibit exhibit) { exhibits.add(exhibit); }
 }

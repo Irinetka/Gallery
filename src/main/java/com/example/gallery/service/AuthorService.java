@@ -2,21 +2,23 @@ package com.example.gallery.service;
 
 import com.example.gallery.models.Author;
 import com.example.gallery.repository.AuthorRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Optional;
 
+@Service
+@RequiredArgsConstructor
 public class AuthorService {
     private final AuthorRepository authorRepository;
 
-    public AuthorService(AuthorRepository authorRepository) {
-        this.authorRepository = authorRepository;
-    }
-
+    @Transactional
     public Author createAuthor(Author author) {
         validateAuthor(author);
         if (authorRepository.findById(author.getId()).isPresent())
             throw new IllegalStateException("Author with id " + author.getId() + " already exists");
-        return authorRepository.create(author);
+        return authorRepository.save(author);
     }
 
     public Optional<Author> getAuthor(Long id) {
@@ -26,11 +28,21 @@ public class AuthorService {
 
     public List<Author> showAuthors() { return authorRepository.findAll(); }
 
+    @Transactional
+    public Author updateAuthor(Long id, Author author) {
+        validateId(id);
+        Author existing = authorRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Author not found"));
+        if (author.getFullName() != null) existing.setFullName(author.getFullName());
+        return authorRepository.save(existing);
+    }
+
+    @Transactional
     public void deleteAuthor(Long id) {
         validateId(id);
         if (authorRepository.findById(id).isEmpty())
-            throw new IllegalArgumentException("Author with id " + id + " not found");
-        authorRepository.delete(id);
+            throw new IllegalArgumentException("Author not found");
+        authorRepository.deleteById(id);
     }
 
     private void validateAuthor(Author author) {
@@ -41,6 +53,6 @@ public class AuthorService {
     }
 
     private void validateId(Long id) {
-        if (id == null || id <= 0) throw new IllegalArgumentException("Id must be a positive number");
+        if (id == null || id <= 0) throw new IllegalArgumentException("Id must be positive");
     }
 }

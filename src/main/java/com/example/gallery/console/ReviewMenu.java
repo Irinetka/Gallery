@@ -4,6 +4,7 @@ import com.example.gallery.models.Exhibition;
 import com.example.gallery.models.Review;
 import com.example.gallery.service.ExhibitionService;
 import com.example.gallery.service.ReviewService;
+
 import java.util.List;
 
 public class ReviewMenu {
@@ -76,6 +77,7 @@ public class ReviewMenu {
         console.pause();
     }
 
+    // ПРОВЕРКА: пользователь может удалять только свои отзывы
     private void delete() {
         Long id = console.readLong("Review ID: ");
         Review review = reviewService.getReview(id)

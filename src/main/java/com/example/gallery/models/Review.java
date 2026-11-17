@@ -1,38 +1,41 @@
 package com.example.gallery.models;
 
+import jakarta.persistence.*;
+import lombok.*;
+import java.time.LocalDateTime;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.time.LocalDateTime;
-
-// Класс Review — модель отзыва
-// Применяется аннотация @Getter — автоматически генерируются геттеры для всех полей
+@Entity
+@Table(name = "reviews")
 @Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 public class Review {
 
-    // Поле id — идентификатор отзыва
-    // Применяется аннотация @Setter — автоматически генерируется сеттер
-    @Setter
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // Поле visitor — ссылка на пользователя, написавшего отзыв (final, сеттер не генерируется)
-    private final User visitor;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User visitor;
 
-    // Поле exhibition — ссылка на выставку
-    // Применяется аннотация @Setter — генерируется сеттер
-    @Setter
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "exhibition_id", nullable = false)
     private Exhibition exhibition;
 
-    // Поле content — текст отзыва (final, сеттер не генерируется)
-    private final String content;
+    @Column(name = "review_text", nullable = false, length = 1000)
+    private String content;
 
-    // Поле rating — оценка от 1 до 5 (final, сеттер не генерируется)
-    private final Integer rating;
+    @Column(nullable = false)
+    private Integer rating;
 
-    // Поле createdAt — дата и время создания отзыва (final)
-    private final LocalDateTime createdAt;
+    @Column(name = "created_at", nullable = false)
+    private LocalDateTime createdAt;
 
-    // Конструктор с параметрами — инициализируются все поля, createdAt устанавливается вызовом LocalDateTime.now()
     public Review(Long id, User visitor, Exhibition exhibition, String content, Integer rating) {
         this.id = id;
         this.visitor = visitor;
