@@ -5,15 +5,14 @@ on:
     branches:
       - master
       - lab1-gallery
-
+      - lab2
   pull_request:
     branches:
       - master
       - lab1-gallery
+      - lab2
 
 jobs:
-
-  # 1. Unit tests
   test:
     name: Run unit tests
     runs-on: ubuntu-latest
@@ -23,7 +22,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up JDK 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5        # ← обновили с v4 на v5
         with:
           java-version: '17'
           distribution: 'temurin'
@@ -32,4 +31,10 @@ jobs:
       - name: Run tests with Maven
         run: mvn clean test -DargLine="--add-opens java.base/java.lang=ALL-UNNAMED --add-opens java.base/java.util=ALL-UNNAMED"
 
-
+      - name: Upload test reports on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: maven-surefire-reports
+          path: target/surefire-reports/
+          retention-days: 3
