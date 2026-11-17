@@ -30,6 +30,6 @@ jobs:
           cache: maven
 
       - name: Run tests with Maven
-        run: mvn clean test
+        run: mvn clean test -DargLine="--add-opens java.base/java.lang=ALL-UNNAMED --add-opens java.base/java.util=ALL-UNNAMED"
 
 
