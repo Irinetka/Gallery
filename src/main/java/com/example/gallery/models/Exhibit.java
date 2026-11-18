@@ -1,60 +1,49 @@
 package com.example.gallery.models;
 
-import java.util.ArrayList;
-import java.util.List;
+import jakarta.persistence.*;
+import lombok.*;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
+@Entity
+@Table(name = "exhibits")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 public class Exhibit {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Column(nullable = false, length = 200)
     private String title;
+
+    @Column(name = "inventory_number", nullable = false, unique = true, length = 50)
     private String inventoryNumber;
+
+    @Column(name = "creation_year", nullable = false)
     private Integer year;
+
+    @Column(length = 50)
     private String size;
+
+    @Column(length = 100)
     private String material;
+
+    @Column(length = 100)
     private String technique;
+
+    @Column(length = 150)
     private String location;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "author_id", nullable = false)
     private Author author;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "category_id", nullable = false)
     private Category category;
-    private final List<Exhibition> exhibitions = new ArrayList<>();
-    private final List<Review> reviews = new ArrayList<>();
-
-    public Exhibit() {}
-
-    public Exhibit(Long id, String title, String inventoryNumber, Integer year,
-                   String size, String material, String technique, String location,
-                   Author author, Category category) {
-        this.id = id;
-        this.title = title;
-        this.inventoryNumber = inventoryNumber;
-        this.year = year;
-        this.size = size;
-        this.material = material;
-        this.technique = technique;
-        this.location = location;
-        this.author = author;
-        this.category = category;
-    }
-
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
-    public String getTitle() { return title; }
-    public void setTitle(String title) { this.title = title; }
-    public String getInventoryNumber() { return inventoryNumber; }
-    public void setInventoryNumber(String inventoryNumber) { this.inventoryNumber = inventoryNumber; }
-    public Integer getYear() { return year; }
-    public void setYear(Integer year) { this.year = year; }
-    public String getSize() { return size; }
-    public void setSize(String size) { this.size = size; }
-    public String getMaterial() { return material; }
-    public void setMaterial(String material) { this.material = material; }
-    public String getTechnique() { return technique; }
-    public void setTechnique(String technique) { this.technique = technique; }
-    public String getLocation() { return location; }
-    public void setLocation(String location) { this.location = location; }
-    public Author getAuthor() { return author; }
-    public void setAuthor(Author author) { this.author = author; }
-    public Category getCategory() { return category; }
-    public void setCategory(Category category) { this.category = category; }
-    public List<Exhibition> getExhibitions() { return exhibitions; }
-    public List<Review> getReviews() { return reviews; }
-    public void addReview(Review review) { reviews.add(review); }
 }

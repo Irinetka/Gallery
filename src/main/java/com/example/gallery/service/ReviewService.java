@@ -6,36 +6,31 @@ import com.example.gallery.models.User;
 import com.example.gallery.repository.ExhibitionRepository;
 import com.example.gallery.repository.ReviewRepository;
 import com.example.gallery.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Optional;
 
+@Service
+@RequiredArgsConstructor
 public class ReviewService {
     private final ReviewRepository reviewRepository;
     private final UserRepository userRepository;
     private final ExhibitionRepository exhibitionRepository;
 
-    public ReviewService(ReviewRepository reviewRepository,
-                         UserRepository userRepository,
-                         ExhibitionRepository exhibitionRepository) {
-        this.reviewRepository = reviewRepository;
-        this.userRepository = userRepository;
-        this.exhibitionRepository = exhibitionRepository;
-    }
-
+    @Transactional
     public Review createReview(Review review) {
         validateReview(review);
         if (reviewRepository.findById(review.getId()).isPresent())
             throw new IllegalStateException("Review with id " + review.getId() + " already exists");
-
         User visitor = userRepository.findById(review.getVisitor().getId())
                 .orElseThrow(() -> new IllegalArgumentException("Visitor not found"));
         Exhibition exhibition = exhibitionRepository.findById(review.getExhibition().getId())
                 .orElseThrow(() -> new IllegalArgumentException("Exhibition not found"));
-
-        Review created = reviewRepository.create(review);
-        visitor.addReview(created);
-        exhibition.addReview(created);
-        return created;
+        review.setVisitor(visitor);
+        review.setExhibition(exhibition);
+        return reviewRepository.save(review);
     }
 
     public Optional<Review> getReview(Long id) {
@@ -57,13 +52,33 @@ public class ReviewService {
         return reviewRepository.findByVisitorId(visitorId);
     }
 
+    public List<Review> search(Long exhibitionId, Long visitorId) {
+        if (exhibitionId != null && visitorId != null)
+            return reviewRepository.findAll().stream()
+                    .filter(r -> r.getExhibition().getId().equals(exhibitionId))
+                    .filter(r -> r.getVisitor().getId().equals(visitorId))
+                    .toList();
+        if (exhibitionId != null) return reviewRepository.findByExhibitionId(exhibitionId);
+        if (visitorId != null) return reviewRepository.findByVisitorId(visitorId);
+        return reviewRepository.findAll();
+    }
+
+    @Transactional
+    public Review update(Long id, Review review) {
+        validateId(id);
+        Review existing = reviewRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Review not found"));
+        if (review.getContent() != null) existing.setContent(review.getContent());
+        if (review.getRating() != null) existing.setRating(review.getRating());
+        return reviewRepository.save(existing);
+    }
+
+    @Transactional
     public void deleteReview(Long id) {
         validateId(id);
-        Review review = reviewRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Review with id " + id + " not found"));
-        if (review.getVisitor() != null) review.getVisitor().getReviews().remove(review);
-        if (review.getExhibition() != null) review.getExhibition().getReviews().remove(review);
-        reviewRepository.delete(id);
+        if (reviewRepository.findById(id).isEmpty())
+            throw new IllegalArgumentException("Review not found");
+        reviewRepository.deleteById(id);
     }
 
     private void validateReview(Review review) {
@@ -80,6 +95,6 @@ public class ReviewService {
     }
 
     private void validateId(Long id) {
-        if (id == null || id <= 0) throw new IllegalArgumentException("Id must be a positive number");
+        if (id == null || id <= 0) throw new IllegalArgumentException("Id must be positive");
     }
 }
