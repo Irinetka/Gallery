@@ -5,12 +5,10 @@ on:
     branches:
       - master
       - lab1-gallery
-      - lab2
   pull_request:
     branches:
       - master
       - lab1-gallery
-      - lab2
 
 jobs:
   test:
