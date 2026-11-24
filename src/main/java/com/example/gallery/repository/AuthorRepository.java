@@ -1,12 +1,11 @@
 package com.example.gallery.repository;
 
 import com.example.gallery.models.Author;
-import java.util.List;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
 import java.util.Optional;
 
-public interface AuthorRepository {
-    Author create(Author author);
-    Optional<Author> findById(Long id);
-    List<Author> findAll();
-    void delete(Long id);
+@Repository
+public interface AuthorRepository extends JpaRepository<Author, Long> {
+    Optional<Author> findByFullName(String fullName);
 }

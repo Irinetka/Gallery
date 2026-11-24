@@ -6,39 +6,50 @@ import com.example.gallery.models.Exhibit;
 import com.example.gallery.repository.AuthorRepository;
 import com.example.gallery.repository.CategoryRepository;
 import com.example.gallery.repository.ExhibitRepository;
-import com.example.gallery.repository.InMemoryAuthorRepository;
-import com.example.gallery.repository.InMemoryCategoryRepository;
-import com.example.gallery.repository.InMemoryExhibitRepository;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import static org.junit.jupiter.api.Assertions.*;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.springframework.boot.test.context.SpringBootTest;
+
 import java.util.List;
+import java.util.Optional;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
+/**
+ * Тесты для ExhibitService.
+ * Использует @SpringBootTest + Mockito (без подключения к БД).
+ */
+@SpringBootTest
 class ExhibitServiceTest {
+
+    @Mock
+    private ExhibitRepository exhibitRepository;
+
+    @Mock
+    private AuthorRepository authorRepository;
+
+    @Mock
+    private CategoryRepository categoryRepository;
+
+    @Mock
+    private MultiThreadService multiThreadService;
+
+    @InjectMocks
     private ExhibitService exhibitService;
-    private AuthorService authorService;
-    private CategoryService categoryService;
-
-    @BeforeEach
-    void setUp() {
-        AuthorRepository authorRepo = new InMemoryAuthorRepository();
-        CategoryRepository categoryRepo = new InMemoryCategoryRepository();
-        ExhibitRepository exhibitRepo = new InMemoryExhibitRepository();
-
-        authorService = new AuthorService(authorRepo);
-        categoryService = new CategoryService(categoryRepo);
-        exhibitService = new ExhibitService(exhibitRepo, authorRepo, categoryRepo);
-
-        authorService.createAuthor(new Author(1L, "Aivazovsky Ivan"));
-        categoryService.createCategory(new Category(1L, "Painting"));
-    }
 
     @Test
     void testCreateExhibit() {
-        Author author = authorService.getAuthor(1L).orElseThrow();
-        Category category = categoryService.getCategory(1L).orElseThrow();
+        Author author = new Author(1L, "Aivazovsky Ivan");
+        Category category = new Category(1L, "Painting");
         Exhibit exhibit = new Exhibit(1L, "The Ninth Wave", "INV-001", 1850,
                 "221x332", "Oil on canvas", "Painting", "Hall 1", author, category);
+
+        when(exhibitRepository.findById(1L)).thenReturn(Optional.empty());
+        when(authorRepository.findById(1L)).thenReturn(Optional.of(author));
+        when(categoryRepository.findById(1L)).thenReturn(Optional.of(category));
+        when(exhibitRepository.save(any())).thenReturn(exhibit);
 
         Exhibit created = exhibitService.createExhibit(exhibit);
 
@@ -47,39 +58,95 @@ class ExhibitServiceTest {
     }
 
     @Test
-    void testSearchExhibits() {
-        Author author = authorService.getAuthor(1L).orElseThrow();
-        Category category = categoryService.getCategory(1L).orElseThrow();
+    void testSearchExhibitsWithMultithreading() {
+        Author author = new Author(1L, "Aivazovsky Ivan");
+        Category category = new Category(1L, "Painting");
 
-        exhibitService.createExhibit(new Exhibit(1L, "The Ninth Wave", "INV-001", 1850, "221x332", "Oil", "Painting", "Hall 1", author, category));
-        exhibitService.createExhibit(new Exhibit(2L, "Black Sea", "INV-002", 1881, "150x200", "Oil", "Painting", "Hall 2", author, category));
+        Exhibit e1 = new Exhibit(1L, "The Ninth Wave", "INV-001", 1850,
+                "221x332", "Oil", "Painting", "Hall 1", author, category);
+        Exhibit e2 = new Exhibit(2L, "Black Sea", "INV-002", 1881,
+                "150x200", "Oil", "Painting", "Hall 2", author, category);
+        Exhibit e3 = new Exhibit(3L, "Bogatyrs", "INV-003", 1898,
+                "295x446", "Oil", "Painting", "Hall 3", author, category);
 
-        List<Exhibit> result = exhibitService.searchExhibits("Ninth");
+        when(exhibitRepository.findAll()).thenReturn(List.of(e1, e2, e3));
+        when(multiThreadService.searchExhibitsInParallel(anyList(), eq("Ninth")))
+                .thenReturn(List.of(e1));
+
+        List<Exhibit> result = exhibitService.searchExhibitsWithMultithreading("Ninth");
+
         assertEquals(1, result.size());
         assertEquals("The Ninth Wave", result.get(0).getTitle());
     }
 
     @Test
-    void testFilterByYearRange() {
-        Author author = authorService.getAuthor(1L).orElseThrow();
-        Category category = categoryService.getCategory(1L).orElseThrow();
+    void testSearchExhibitsEmptyResult() {
+        Author author = new Author(1L, "Aivazovsky Ivan");
+        Category category = new Category(1L, "Painting");
 
-        exhibitService.createExhibit(new Exhibit(1L, "Painting 1850", "INV-001", 1850, "100x100", "Oil", "Painting", "Hall 1", author, category));
-        exhibitService.createExhibit(new Exhibit(2L, "Painting 1900", "INV-002", 1900, "100x100", "Oil", "Painting", "Hall 2", author, category));
+        when(exhibitRepository.findAll()).thenReturn(List.of(
+                new Exhibit(1L, "The Ninth Wave", "INV-001", 1850,
+                        "221x332", "Oil", "Painting", "Hall 1", author, category)
+        ));
+        when(multiThreadService.searchExhibitsInParallel(anyList(), eq("NonExistent")))
+                .thenReturn(List.of());
+
+        List<Exhibit> result = exhibitService.searchExhibitsWithMultithreading("NonExistent");
+
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void testSearchExhibitsEmptyQuery() {
+        assertThrows(IllegalArgumentException.class, () ->
+                exhibitService.searchExhibitsWithMultithreading(""));
+    }
+
+    @Test
+    void testFilterByAuthor() {
+        Author author = new Author(1L, "Aivazovsky Ivan");
+        Category category = new Category(1L, "Painting");
+
+        when(authorRepository.findById(1L)).thenReturn(Optional.of(author));
+        when(exhibitRepository.findByAuthorId(1L)).thenReturn(List.of(
+                new Exhibit(1L, "Painting 1", "INV-001", 1850,
+                        "100x100", "Oil", "Painting", "Hall 1", author, category),
+                new Exhibit(2L, "Painting 2", "INV-002", 1860,
+                        "100x100", "Oil", "Painting", "Hall 2", author, category)
+        ));
+
+        List<Exhibit> result = exhibitService.showExhibitsByAuthor(1L);
+
+        assertEquals(2, result.size());
+    }
+
+    @Test
+    void testFilterByYearRange() {
+        Author author = new Author(1L, "Aivazovsky Ivan");
+        Category category = new Category(1L, "Painting");
+
+        when(exhibitRepository.findByYearBetween(1840, 1860)).thenReturn(List.of(
+                new Exhibit(1L, "Painting 1850", "INV-001", 1850,
+                        "100x100", "Oil", "Painting", "Hall 1", author, category)
+        ));
 
         List<Exhibit> result = exhibitService.showExhibitsByYearRange(1840, 1860);
+
         assertEquals(1, result.size());
-        assertEquals(1850, result.get(0).getYear());
     }
 
     @Test
     void testDeleteExhibit() {
-        Author author = authorService.getAuthor(1L).orElseThrow();
-        Category category = categoryService.getCategory(1L).orElseThrow();
+        Author author = new Author(1L, "Aivazovsky Ivan");
+        Category category = new Category(1L, "Painting");
 
-        exhibitService.createExhibit(new Exhibit(1L, "Test", "INV-001", 1850, "100x100", "Oil", "Painting", "Hall 1", author, category));
+        when(exhibitRepository.findById(1L)).thenReturn(Optional.of(
+                new Exhibit(1L, "Test", "INV-001", 1850,
+                        "100x100", "Oil", "Painting", "Hall 1", author, category)
+        ));
 
         exhibitService.deleteExhibit(1L);
-        assertTrue(exhibitService.getExhibit(1L).isEmpty());
+
+        verify(exhibitRepository, times(1)).deleteById(1L);  // ✅ Проверяем вызов метода
     }
 }

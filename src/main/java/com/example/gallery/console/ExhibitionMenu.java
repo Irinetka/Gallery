@@ -3,6 +3,7 @@ package com.example.gallery.console;
 import com.example.gallery.models.Exhibition;
 import com.example.gallery.models.ExhibitionType;
 import com.example.gallery.service.ExhibitionService;
+
 import java.time.LocalDate;
 import java.util.List;
 
@@ -93,7 +94,14 @@ public class ExhibitionMenu {
         console.pause();
     }
 
+    // ПРОВЕРКА ПРАВ: только Admin и Manager могут создавать выставки
     private void create() {
+        if (!session.getCurrentUser().canManageExhibitions()) {
+            System.out.println("Access denied. Only Admin and Manager can create exhibitions.");
+            console.pause();
+            return;
+        }
+
         Long id = console.readLong("New exhibition ID: ");
         String title = console.readNonBlankString("Title: ");
 
@@ -133,7 +141,14 @@ public class ExhibitionMenu {
         console.pause();
     }
 
+    // ПРОВЕРКА ПРАВ: только Admin и Manager могут добавлять теги
     private void addTag() {
+        if (!session.getCurrentUser().canManageExhibitions()) {
+            System.out.println("Access denied. Only Admin and Manager can add tags.");
+            console.pause();
+            return;
+        }
+
         Long id = console.readLong("Exhibition ID: ");
         String tag = console.readNonBlankString("Tag: ");
         exhibitionService.addTag(id, tag);
@@ -141,7 +156,14 @@ public class ExhibitionMenu {
         console.pause();
     }
 
+    // ПРОВЕРКА ПРАВ: только Admin и Manager могут удалять теги
     private void removeTag() {
+        if (!session.getCurrentUser().canManageExhibitions()) {
+            System.out.println("Access denied. Only Admin and Manager can remove tags.");
+            console.pause();
+            return;
+        }
+
         Long id = console.readLong("Exhibition ID: ");
         String tag = console.readNonBlankString("Tag: ");
         exhibitionService.removeTag(id, tag);
@@ -149,7 +171,14 @@ public class ExhibitionMenu {
         console.pause();
     }
 
+    // ПРОВЕРКА ПРАВ:только Admin и Manager могут удалять выставки
     private void delete() {
+        if (!session.getCurrentUser().canManageExhibitions()) {
+            System.out.println("Access denied. Only Admin and Manager can delete exhibitions.");
+            console.pause();
+            return;
+        }
+
         Long id = console.readLong("Exhibition ID: ");
         exhibitionService.deleteExhibition(id);
         System.out.println("Exhibition deleted.");
@@ -160,7 +189,8 @@ public class ExhibitionMenu {
         System.out.println();
         System.out.println("ID: " + exhibition.getId());
         System.out.println("Title: " + exhibition.getTitle());
-        System.out.println("Type: " + (exhibition.getType() == ExhibitionType.PERMANENT ? "Permanent" : "Temporary"));
+        System.out.println("Type: " + (exhibition.getType() == ExhibitionType.PERMANENT
+                ? "Permanent" : "Temporary"));
         System.out.println("Location: " + exhibition.getLocation());
         if (exhibition.getStartDate() != null && exhibition.getEndDate() != null) {
             System.out.println("Period: " + exhibition.getStartDate() + " - " + exhibition.getEndDate());

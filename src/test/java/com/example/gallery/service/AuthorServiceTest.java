@@ -2,27 +2,36 @@ package com.example.gallery.service;
 
 import com.example.gallery.models.Author;
 import com.example.gallery.repository.AuthorRepository;
-import com.example.gallery.repository.InMemoryAuthorRepository;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.springframework.boot.test.context.SpringBootTest;
 
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
+/**
+ * Тесты для AuthorService.
+ * Использует @SpringBootTest + Mockito (без подключения к БД).
+ */
+@SpringBootTest
 class AuthorServiceTest {
-    private AuthorRepository authorRepository;
-    private AuthorService authorService;
 
-    @BeforeEach
-    void setUp() {
-        authorRepository = new InMemoryAuthorRepository();
-        authorService = new AuthorService(authorRepository);
-    }
+    @Mock
+    private AuthorRepository authorRepository;
+
+    @InjectMocks
+    private AuthorService authorService;
 
     @Test
     void testCreateAuthorSuccess() {
         Author author = new Author(1L, "Aivazovsky Ivan");
+        when(authorRepository.findById(1L)).thenReturn(Optional.empty());
+        when(authorRepository.save(author)).thenReturn(author);
+
         Author created = authorService.createAuthor(author);
 
         assertNotNull(created);
@@ -33,6 +42,7 @@ class AuthorServiceTest {
     @Test
     void testCreateAuthorDuplicateId() {
         authorService.createAuthor(new Author(1L, "Aivazovsky Ivan"));
+        when(authorRepository.findById(1L)).thenReturn(Optional.of(new Author(1L, "Aivazovsky Ivan")));
 
         Author duplicate = new Author(1L, "Vasnetsov Viktor");
 
@@ -67,7 +77,7 @@ class AuthorServiceTest {
 
     @Test
     void testGetAuthorSuccess() {
-        authorService.createAuthor(new Author(1L, "Aivazovsky Ivan"));
+        when(authorRepository.findById(1L)).thenReturn(Optional.of(new Author(1L, "Aivazovsky Ivan")));
 
         Author found = authorService.getAuthor(1L).orElse(null);
 
@@ -77,6 +87,8 @@ class AuthorServiceTest {
 
     @Test
     void testGetAuthorNotFound() {
+        when(authorRepository.findById(999L)).thenReturn(Optional.empty());
+
         Author found = authorService.getAuthor(999L).orElse(null);
 
         assertNull(found);
@@ -89,9 +101,11 @@ class AuthorServiceTest {
 
     @Test
     void testShowAuthors() {
-        authorService.createAuthor(new Author(1L, "Aivazovsky Ivan"));
-        authorService.createAuthor(new Author(2L, "Vasnetsov Viktor"));
-        authorService.createAuthor(new Author(3L, "Repin Ilya"));
+        when(authorRepository.findAll()).thenReturn(List.of(
+                new Author(1L, "Aivazovsky Ivan"),
+                new Author(2L, "Vasnetsov Viktor"),
+                new Author(3L, "Repin Ilya")
+        ));
 
         List<Author> authors = authorService.showAuthors();
 
@@ -100,6 +114,8 @@ class AuthorServiceTest {
 
     @Test
     void testShowAuthorsEmpty() {
+        when(authorRepository.findAll()).thenReturn(List.of());
+
         List<Author> authors = authorService.showAuthors();
 
         assertTrue(authors.isEmpty());
@@ -107,15 +123,18 @@ class AuthorServiceTest {
 
     @Test
     void testDeleteAuthorSuccess() {
-        authorService.createAuthor(new Author(1L, "Aivazovsky Ivan"));
+        when(authorRepository.findById(1L)).thenReturn(Optional.of(new Author(1L, "Aivazovsky Ivan")));
 
         authorService.deleteAuthor(1L);
 
-        assertTrue(authorService.getAuthor(1L).isEmpty());
+        // Проверяем, что deleteById был вызван ровно один раз
+        verify(authorRepository, times(1)).deleteById(1L);
     }
 
     @Test
     void testDeleteAuthorNotFound() {
+        when(authorRepository.findById(999L)).thenReturn(Optional.empty());
+
         assertThrows(IllegalArgumentException.class, () -> authorService.deleteAuthor(999L));
     }
 

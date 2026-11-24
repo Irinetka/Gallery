@@ -1,16 +1,45 @@
 package com.example.gallery.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import jakarta.persistence.*;
+import lombok.*;
 import java.time.LocalDateTime;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
+@Entity
+@Table(name = "reviews")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "fieldHandler"})
 public class Review {
-    private Long id;
-    private User visitor;
-    private Exhibition exhibition;
-    private String content;
-    private Integer rating;
-    private LocalDateTime createdAt;
 
-    public Review() {}
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    @JsonIgnore
+    private User visitor;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "exhibition_id", nullable = false)
+    @JsonIgnore
+    private Exhibition exhibition;
+
+    @Column(name = "review_text", nullable = false, length = 1000)
+    private String content;
+
+    @Column(nullable = false)
+    private Integer rating;
+
+    @Column(name = "created_at", nullable = false)
+    private LocalDateTime createdAt;
 
     public Review(Long id, User visitor, Exhibition exhibition, String content, Integer rating) {
         this.id = id;
@@ -20,17 +49,4 @@ public class Review {
         this.rating = rating;
         this.createdAt = LocalDateTime.now();
     }
-
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
-    public User getVisitor() { return visitor; }
-    public void setVisitor(User visitor) { this.visitor = visitor; }
-    public Exhibition getExhibition() { return exhibition; }
-    public void setExhibition(Exhibition exhibition) { this.exhibition = exhibition; }
-    public String getContent() { return content; }
-    public void setContent(String content) { this.content = content; }
-    public Integer getRating() { return rating; }
-    public void setRating(Integer rating) { this.rating = rating; }
-    public LocalDateTime getCreatedAt() { return createdAt; }
-    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 }

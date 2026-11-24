@@ -1,62 +1,99 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
-         https://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
+    <!-- ================================================================ -->
+    <!-- РОДИТЕЛЬСКИЙ POM Spring Boot (управляет версиями зависимостей)  -->
+    <!-- ================================================================ -->
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
         <version>3.2.4</version>
-        <relativePath/>
+        <relativePath/> <!-- lookup parent from repository -->
     </parent>
 
+    <!-- ================================================================ -->
+    <!-- КООРДИНАТЫ ПРОЕКТА                                             -->
+    <!-- ================================================================ -->
     <groupId>com.example</groupId>
     <artifactId>gallery</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>Gallery</name>
     <description>Art Gallery Management System</description>
 
+    <!-- ================================================================ -->
+    <!-- СВОЙСТВА ПРОЕКТА                                               -->
+    <!-- ================================================================ -->
     <properties>
         <java.version>17</java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+        <lombok.version>1.18.30</lombok.version>
+        <springdoc.version>2.3.0</springdoc.version>
     </properties>
 
+    <!-- ================================================================ -->
+    <!-- ЗАВИСИМОСТИ                                                    -->
+    <!-- ================================================================ -->
     <dependencies>
-        <!-- Spring Web -->
+
+        <!-- ============ ЯДРО ПРИЛОЖЕНИЯ ============ -->
+
+        <!-- Spring Web: REST-контроллеры, Embedded Tomcat, JSON -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
 
-        <!-- Spring Data JPA -->
+        <!-- Spring Data JPA: Hibernate, репозитории, сущности -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-jpa</artifactId>
         </dependency>
 
-        <!-- PostgreSQL -->
+        <!-- Spring Security: аутентификация и авторизация -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
+
+        <!-- Bean Validation: @NotNull, @Email, @Size, @Valid и т.д. -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-validation</artifactId>
+        </dependency>
+
+        <!-- ============ БАЗА ДАННЫХ ============ -->
+
+        <!-- Драйвер PostgreSQL (нужен только во время выполнения) -->
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
             <scope>runtime</scope>
         </dependency>
 
-        <!-- Spring Security -->
+        <!-- ============ ДОКУМЕНТАЦИЯ API ============ -->
+
+        <!-- Swagger / OpenAPI 3 UI (springdoc для Spring Boot 3.x) -->
         <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-security</artifactId>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+            <version>${springdoc.version}</version>
         </dependency>
 
-        <!-- Lombok -->
+        <!-- ============ ИНСТРУМЕНТЫ РАЗРАБОТКИ ============ -->
+
+        <!-- Lombok: @Data, @Getter, @Setter, @Builder, @Slf4j и т.д. -->
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
+            <version>${lombok.version}</version>
             <optional>true</optional>
         </dependency>
 
-        <!-- DevTools -->
+        <!-- DevTools: автоперезагрузка при изменении кода -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-devtools</artifactId>
@@ -64,34 +101,55 @@
             <optional>true</optional>
         </dependency>
 
-        <!-- Swagger/OpenAPI -->
-        <dependency>
-            <groupId>org.springdoc</groupId>
-            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
-            <version>2.3.0</version>
-        </dependency>
+        <!-- ============ ТЕСТИРОВАНИЕ ============ -->
 
-        <!-- Actuator -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-actuator</artifactId>
-        </dependency>
-
-        <!-- Tests -->
+        <!-- Базовый набор для тестов: JUnit 5, Mockito, AssertJ, Spring Test -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
+
+        <!-- Тестирование Spring Security (@WithMockUser, csrf(), authenticated()) -->
         <dependency>
             <groupId>org.springframework.security</groupId>
             <artifactId>spring-security-test</artifactId>
             <scope>test</scope>
         </dependency>
+
+        <!-- H2 для интеграционных тестов (не нужен в production) -->
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <scope>test</scope>
+        </dependency>
+
     </dependencies>
 
+    <!-- ================================================================ -->
+    <!-- СБОРКА                                                           -->
+    <!-- ================================================================ -->
     <build>
         <plugins>
+
+            <!-- Плагин компиляции: обработка аннотаций Lombok -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>${java.version}</source>
+                    <target>${java.version}</target>
+                    <annotationProcessorPaths>
+                        <path>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                            <version>${lombok.version}</version>
+                        </path>
+                    </annotationProcessorPaths>
+                </configuration>
+            </plugin>
+
+            <!-- Плагин Spring Boot: сборка executable JAR -->
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
@@ -104,6 +162,8 @@
                     </excludes>
                 </configuration>
             </plugin>
+
         </plugins>
     </build>
+
 </project>

@@ -4,6 +4,7 @@ import com.example.gallery.models.Exhibition;
 import com.example.gallery.models.Ticket;
 import com.example.gallery.service.ExhibitionService;
 import com.example.gallery.service.TicketService;
+
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -55,6 +56,13 @@ public class TicketMenu {
     }
 
     private void buy() {
+        // ПРОВЕРКА ПРАВ: только Admin и Customer могут покупать билеты
+        if (!session.getCurrentUser().canBuyTickets()) {
+            System.out.println("Access denied. Only Admin and Customer can buy tickets.");
+            console.pause();
+            return;
+        }
+
         System.out.println();
         System.out.println("Available exhibitions");
         List<Exhibition> exhibitions = exhibitionService.showAllExhibitions();
@@ -77,6 +85,7 @@ public class TicketMenu {
         console.pause();
     }
 
+    // ПРОВЕРКА: пользователь может удалять только свои билеты
     private void delete() {
         Long id = console.readLong("Ticket ID: ");
         Ticket ticket = ticketService.getTicket(id)

@@ -2,27 +2,36 @@ package com.example.gallery.service;
 
 import com.example.gallery.models.Category;
 import com.example.gallery.repository.CategoryRepository;
-import com.example.gallery.repository.InMemoryCategoryRepository;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.springframework.boot.test.context.SpringBootTest;
 
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
+/**
+ * Тесты для CategoryService.
+ * Использует @SpringBootTest + Mockito (без подключения к БД).
+ */
+@SpringBootTest
 class CategoryServiceTest {
-    private CategoryRepository categoryRepository;
-    private CategoryService categoryService;
 
-    @BeforeEach
-    void setUp() {
-        categoryRepository = new InMemoryCategoryRepository();
-        categoryService = new CategoryService(categoryRepository);
-    }
+    @Mock
+    private CategoryRepository categoryRepository;
+
+    @InjectMocks
+    private CategoryService categoryService;
 
     @Test
     void testCreateCategorySuccess() {
         Category category = new Category(1L, "Painting");
+        when(categoryRepository.findById(1L)).thenReturn(Optional.empty());
+        when(categoryRepository.save(category)).thenReturn(category);
+
         Category created = categoryService.createCategory(category);
 
         assertNotNull(created);
@@ -33,6 +42,7 @@ class CategoryServiceTest {
     @Test
     void testCreateCategoryDuplicateId() {
         categoryService.createCategory(new Category(1L, "Painting"));
+        when(categoryRepository.findById(1L)).thenReturn(Optional.of(new Category(1L, "Painting")));
 
         Category duplicate = new Category(1L, "Graphics");
 
@@ -67,7 +77,7 @@ class CategoryServiceTest {
 
     @Test
     void testGetCategorySuccess() {
-        categoryService.createCategory(new Category(1L, "Painting"));
+        when(categoryRepository.findById(1L)).thenReturn(Optional.of(new Category(1L, "Painting")));
 
         Category found = categoryService.getCategory(1L).orElse(null);
 
@@ -77,6 +87,8 @@ class CategoryServiceTest {
 
     @Test
     void testGetCategoryNotFound() {
+        when(categoryRepository.findById(999L)).thenReturn(Optional.empty());
+
         Category found = categoryService.getCategory(999L).orElse(null);
 
         assertNull(found);
@@ -89,9 +101,11 @@ class CategoryServiceTest {
 
     @Test
     void testShowCategories() {
-        categoryService.createCategory(new Category(1L, "Painting"));
-        categoryService.createCategory(new Category(2L, "Graphics"));
-        categoryService.createCategory(new Category(3L, "Sculpture"));
+        when(categoryRepository.findAll()).thenReturn(List.of(
+                new Category(1L, "Painting"),
+                new Category(2L, "Graphics"),
+                new Category(3L, "Sculpture")
+        ));
 
         List<Category> categories = categoryService.showCategories();
 
@@ -100,6 +114,8 @@ class CategoryServiceTest {
 
     @Test
     void testShowCategoriesEmpty() {
+        when(categoryRepository.findAll()).thenReturn(List.of());
+
         List<Category> categories = categoryService.showCategories();
 
         assertTrue(categories.isEmpty());
@@ -107,15 +123,17 @@ class CategoryServiceTest {
 
     @Test
     void testDeleteCategorySuccess() {
-        categoryService.createCategory(new Category(1L, "Painting"));
+        when(categoryRepository.findById(1L)).thenReturn(Optional.of(new Category(1L, "Painting")));
 
         categoryService.deleteCategory(1L);
 
-        assertTrue(categoryService.getCategory(1L).isEmpty());
+        verify(categoryRepository, times(1)).deleteById(1L);
     }
 
     @Test
     void testDeleteCategoryNotFound() {
+        when(categoryRepository.findById(999L)).thenReturn(Optional.empty());
+
         assertThrows(IllegalArgumentException.class, () -> categoryService.deleteCategory(999L));
     }
 

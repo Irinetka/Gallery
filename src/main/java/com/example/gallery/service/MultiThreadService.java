@@ -1,135 +1,125 @@
 package com.example.gallery.service;
 
 import com.example.gallery.models.Exhibit;
-import java.util.ArrayList;
-import java.util.List;
+import org.springframework.stereotype.Service;
 
+import java.util.List;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
+
+@Service
 public class MultiThreadService {
 
+    /**
+     * Многопоточный поиск экспонатов по названию.
+     * Использует пул из 4 потоков.
+     */
+    public List<Exhibit> searchExhibitsInParallel(List<Exhibit> exhibits, String query) {
+        ExecutorService executor = Executors.newFixedThreadPool(4);
+        try {
+            List<Callable<List<Exhibit>>> tasks = exhibits.stream()
+                    .map(e -> (Callable<List<Exhibit>>) () -> {
+                        if (e.getTitle().toLowerCase().contains(query.toLowerCase()))
+                            return List.of(e);
+                        return List.of();
+                    }).collect(Collectors.toList());
+
+            List<Future<List<Exhibit>>> futures = executor.invokeAll(tasks);
+            return futures.stream()
+                    .map(f -> {
+                        try { return f.get(); }
+                        catch (Exception ex) { return List.<Exhibit>of(); }
+                    })
+                    .flatMap(List::stream)
+                    .collect(Collectors.toList());
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return List.of();
+        } finally {
+            executor.shutdown();
+        }
+    }
+
+    /**
+     * Демонстрация многопоточной обработки экспонатов.
+     * Потоки именуются GalleryWorker-1, GalleryWorker-2, ...
+     * При пустом списке выводит "No exhibits to process".
+     */
     public void processExhibitsInParallel(List<Exhibit> exhibits) {
         if (exhibits == null || exhibits.isEmpty()) {
             System.out.println("No exhibits to process");
             return;
         }
 
-        System.out.println();
-        System.out.println("MULTITHREAD EXHIBIT PROCESSING");
-        System.out.println("Total exhibits: " + exhibits.size());
-        System.out.println();
+        ThreadFactory galleryFactory = new ThreadFactory() {
+            private final AtomicInteger counter = new AtomicInteger(1);
 
-        List<Thread> threads = new ArrayList<>();
-        long startTime = System.currentTimeMillis();
-
-        for (int i = 0; i < exhibits.size(); i++) {
-            final Exhibit exhibit = exhibits.get(i);
-            final int index = i;
-            String threadName = "GalleryWorker-" + (i + 1);
-
-            Runnable processor = () -> {
-                Thread.currentThread().setName(threadName);
-                System.out.println("[" + Thread.currentThread().getName() + "] " +
-                        "Start processing #" + exhibit.getId() + ": " + exhibit.getTitle());
-                try {
-                    simulate("Loading metadata");
-                    simulate("Analyzing author: " + (exhibit.getAuthor() != null ? exhibit.getAuthor().getFullName() : "unknown"));
-                    simulate("Checking category: " + (exhibit.getCategory() != null ? exhibit.getCategory().getName() : "not specified"));
-                    System.out.println("[" + Thread.currentThread().getName() + "] " +
-                            "Exhibit #" + exhibit.getId() + " processed");
-                } catch (InterruptedException e) {
-                    System.out.println("[" + Thread.currentThread().getName() + "] Interrupted");
-                    Thread.currentThread().interrupt();
-                }
-            };
-
-            Thread thread = new Thread(processor);
-            thread.setName(threadName);
-            threads.add(thread);
-            thread.start();
-            System.out.println("Started thread: " + threadName);
-        }
-
-        System.out.println();
-        System.out.println("Waiting for all threads to complete...");
-        System.out.println();
-
-        for (Thread thread : threads) {
-            try {
-                thread.join();
-            } catch (InterruptedException e) {
-                System.out.println("Waiting interrupted");
-                Thread.currentThread().interrupt();
+            @Override
+            public Thread newThread(Runnable r) {
+                Thread t = new Thread(r);
+                t.setName("GalleryWorker-" + counter.getAndIncrement());
+                return t;
             }
-        }
+        };
 
-        long duration = System.currentTimeMillis() - startTime;
-        System.out.println();
-        System.out.println("All threads completed. Duration: " + duration + " ms");
-        System.out.println();
+        ExecutorService executor = Executors.newCachedThreadPool(galleryFactory);
+        try {
+            List<Callable<Void>> tasks = exhibits.stream()
+                    .map(e -> (Callable<Void>) () -> {
+                        System.out.println("Processing exhibit: " + e.getTitle()
+                                + " in thread: " + Thread.currentThread().getName());
+                        Thread.sleep(100);
+                        return null;
+                    }).collect(Collectors.toList());
+
+            executor.invokeAll(tasks);
+            System.out.println("All pool threads completed");
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        } finally {
+            executor.shutdown();
+        }
     }
 
+    /**
+     * Демонстрация многопоточной обработки с ограниченным пулом потоков.
+     * Потоки именуются PoolWorker-1, PoolWorker-2, ...
+     * @param exhibits список экспонатов
+     * @param threadCount количество потоков в пуле
+     */
     public void processExhibitsWithLimitedThreads(List<Exhibit> exhibits, int threadCount) {
-        if (exhibits == null || exhibits.isEmpty()) {
-            System.out.println("No exhibits to process");
-            return;
-        }
         if (threadCount <= 0) {
             throw new IllegalArgumentException("Thread count must be positive");
         }
 
-        System.out.println();
-        System.out.println("MULTITHREAD PROCESSING WITH POOL OF " + threadCount + " THREADS");
-        System.out.println("Exhibits: " + exhibits.size() + ", Threads: " + threadCount);
-        System.out.println();
+        ThreadFactory poolFactory = new ThreadFactory() {
+            private final AtomicInteger counter = new AtomicInteger(1);
 
-        long startTime = System.currentTimeMillis();
-        List<Thread> threads = new ArrayList<>();
-
-        for (int i = 0; i < threadCount; i++) {
-            final int threadIndex = i;
-            String threadName = "PoolWorker-" + (i + 1);
-
-            Runnable batchProcessor = () -> {
-                Thread.currentThread().setName(threadName);
-                System.out.println("[" + Thread.currentThread().getName() + "] Thread started");
-                for (int j = threadIndex; j < exhibits.size(); j += threadCount) {
-                    Exhibit exhibit = exhibits.get(j);
-                    try {
-                        System.out.println("[" + Thread.currentThread().getName() + "] " +
-                                "Processing #" + exhibit.getId() + ": " + exhibit.getTitle());
-                        Thread.sleep(100 + (long) (Math.random() * 300));
-                        System.out.println("[" + Thread.currentThread().getName() + "] " +
-                                "Processed #" + exhibit.getId());
-                    } catch (InterruptedException e) {
-                        System.out.println("[" + Thread.currentThread().getName() + "] Interrupted");
-                        Thread.currentThread().interrupt();
-                        break;
-                    }
-                }
-                System.out.println("[" + Thread.currentThread().getName() + "] Finished");
-            };
-
-            Thread thread = new Thread(batchProcessor);
-            thread.setName(threadName);
-            threads.add(thread);
-            thread.start();
-        }
-
-        for (Thread thread : threads) {
-            try {
-                thread.join();
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
+            @Override
+            public Thread newThread(Runnable r) {
+                Thread t = new Thread(r);
+                t.setName("PoolWorker-" + counter.getAndIncrement());
+                return t;
             }
+        };
+
+        ExecutorService executor = Executors.newFixedThreadPool(threadCount, poolFactory);
+        try {
+            List<Callable<Void>> tasks = exhibits.stream()
+                    .map(e -> (Callable<Void>) () -> {
+                        System.out.println("Processing exhibit: " + e.getTitle()
+                                + " in thread: " + Thread.currentThread().getName());
+                        Thread.sleep(100);
+                        return null;
+                    }).collect(Collectors.toList());
+
+            executor.invokeAll(tasks);
+            System.out.println("All pool threads completed");
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        } finally {
+            executor.shutdown();
         }
-
-        long duration = System.currentTimeMillis() - startTime;
-        System.out.println();
-        System.out.println("All pool threads completed. Duration: " + duration + " ms");
-        System.out.println();
-    }
-
-    private void simulate(String operation) throws InterruptedException {
-        System.out.println("[" + Thread.currentThread().getName() + "] " + operation);
-        Thread.sleep(100 + (long) (Math.random() * 400));
     }
 }

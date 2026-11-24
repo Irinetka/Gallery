@@ -1,24 +1,37 @@
 package com.example.gallery.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import jakarta.persistence.*;
+import lombok.*;
 import java.util.ArrayList;
 import java.util.List;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
+@Entity
+@Table(name = "authors")
+@Getter
+@Setter
+@NoArgsConstructor
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "fieldHandler"})
 public class Author {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Column(name = "full_name", nullable = false, unique = true, length = 150)
     private String fullName;
-    private final List<Exhibit> exhibits = new ArrayList<>();
 
-    public Author() {}
+    @OneToMany(mappedBy = "author", cascade = CascadeType.ALL)
+    @JsonIgnore
+    private List<Exhibit> exhibits = new ArrayList<>();
 
+    //  Явный конструктор с двумя параметрами
     public Author(Long id, String fullName) {
         this.id = id;
         this.fullName = fullName;
     }
-
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
-    public String getFullName() { return fullName; }
-    public void setFullName(String fullName) { this.fullName = fullName; }
-    public List<Exhibit> getExhibits() { return exhibits; }
-    public void addExhibit(Exhibit exhibit) { exhibits.add(exhibit); }
 }

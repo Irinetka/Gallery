@@ -6,37 +6,33 @@ import com.example.gallery.models.Exhibit;
 import com.example.gallery.repository.AuthorRepository;
 import com.example.gallery.repository.CategoryRepository;
 import com.example.gallery.repository.ExhibitRepository;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.stream.Collectors;
 
+@Service
+@RequiredArgsConstructor
 public class ExhibitService {
     private final ExhibitRepository exhibitRepository;
     private final AuthorRepository authorRepository;
     private final CategoryRepository categoryRepository;
+    private final MultiThreadService multiThreadService;
 
-    public ExhibitService(ExhibitRepository exhibitRepository,
-                          AuthorRepository authorRepository,
-                          CategoryRepository categoryRepository) {
-        this.exhibitRepository = exhibitRepository;
-        this.authorRepository = authorRepository;
-        this.categoryRepository = categoryRepository;
-    }
-
+    @Transactional
     public Exhibit createExhibit(Exhibit exhibit) {
         validateExhibit(exhibit);
         if (exhibitRepository.findById(exhibit.getId()).isPresent())
             throw new IllegalStateException("Exhibit with id " + exhibit.getId() + " already exists");
-
         Author author = authorRepository.findById(exhibit.getAuthor().getId())
                 .orElseThrow(() -> new IllegalArgumentException("Author not found"));
         Category category = categoryRepository.findById(exhibit.getCategory().getId())
                 .orElseThrow(() -> new IllegalArgumentException("Category not found"));
-
-        Exhibit created = exhibitRepository.create(exhibit);
-        author.addExhibit(created);
-        category.addExhibit(created);
-        return created;
+        exhibit.setAuthor(author);
+        exhibit.setCategory(category);
+        return exhibitRepository.save(exhibit);
     }
 
     public Optional<Exhibit> getExhibit(Long id) {
@@ -63,30 +59,48 @@ public class ExhibitService {
     public List<Exhibit> showExhibitsByYearRange(Integer startYear, Integer endYear) {
         if (startYear == null || endYear == null || startYear > endYear)
             throw new IllegalArgumentException("Invalid year range");
-        return exhibitRepository.findByYearRange(startYear, endYear);
+        return exhibitRepository.findByYearBetween(startYear, endYear);
     }
 
-    public void deleteExhibit(Long id) {
-        validateId(id);
-        Exhibit exhibit = exhibitRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Exhibit with id " + id + " not found"));
-        if (exhibit.getAuthor() != null) exhibit.getAuthor().getExhibits().remove(exhibit);
-        if (exhibit.getCategory() != null) exhibit.getCategory().getExhibits().remove(exhibit);
-        exhibitRepository.delete(id);
+    public List<Exhibit> search(String title, Long authorId, Long categoryId,
+                                Integer startYear, Integer endYear) {
+        return exhibitRepository.findAll().stream()
+                .filter(e -> title == null || e.getTitle().toLowerCase().contains(title.toLowerCase()))
+                .filter(e -> authorId == null || e.getAuthor().getId().equals(authorId))
+                .filter(e -> categoryId == null || e.getCategory().getId().equals(categoryId))
+                .filter(e -> startYear == null || e.getYear() >= startYear)
+                .filter(e -> endYear == null || e.getYear() <= endYear)
+                .collect(Collectors.toList());
     }
 
-    public List<Exhibit> searchExhibits(String query) {
+    public List<Exhibit> searchExhibitsWithMultithreading(String query) {
         if (query == null || query.isBlank())
             throw new IllegalArgumentException("Search query cannot be empty");
-        String normalizedQuery = query.toLowerCase();
-        List<Exhibit> result = new ArrayList<>();
-        for (Exhibit exhibit : exhibitRepository.findAll()) {
-            if (exhibit.getTitle() != null &&
-                    exhibit.getTitle().toLowerCase().contains(normalizedQuery)) {
-                result.add(exhibit);
-            }
-        }
-        return result;
+        List<Exhibit> all = exhibitRepository.findAll();
+        return multiThreadService.searchExhibitsInParallel(all, query);
+    }
+
+    @Transactional
+    public Exhibit update(Long id, Exhibit exhibit) {
+        validateId(id);
+        Exhibit existing = exhibitRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Exhibit not found"));
+        if (exhibit.getTitle() != null) existing.setTitle(exhibit.getTitle());
+        if (exhibit.getInventoryNumber() != null) existing.setInventoryNumber(exhibit.getInventoryNumber());
+        if (exhibit.getYear() != null) existing.setYear(exhibit.getYear());
+        if (exhibit.getSize() != null) existing.setSize(exhibit.getSize());
+        if (exhibit.getMaterial() != null) existing.setMaterial(exhibit.getMaterial());
+        if (exhibit.getTechnique() != null) existing.setTechnique(exhibit.getTechnique());
+        if (exhibit.getLocation() != null) existing.setLocation(exhibit.getLocation());
+        return exhibitRepository.save(existing);
+    }
+
+    @Transactional
+    public void deleteExhibit(Long id) {
+        validateId(id);
+        if (exhibitRepository.findById(id).isEmpty())
+            throw new IllegalArgumentException("Exhibit not found");
+        exhibitRepository.deleteById(id);
     }
 
     private void validateExhibit(Exhibit exhibit) {
@@ -101,6 +115,6 @@ public class ExhibitService {
     }
 
     private void validateId(Long id) {
-        if (id == null || id <= 0) throw new IllegalArgumentException("Id must be a positive number");
+        if (id == null || id <= 0) throw new IllegalArgumentException("Id must be positive");
     }
 }

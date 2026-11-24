@@ -1,28 +1,25 @@
 package com.example.gallery.service;
 
-import com.example.gallery.models.Exhibit;
 import com.example.gallery.models.Exhibition;
 import com.example.gallery.models.ExhibitionType;
-import com.example.gallery.repository.ExhibitRepository;
 import com.example.gallery.repository.ExhibitionRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Optional;
 
+@Service
+@RequiredArgsConstructor
 public class ExhibitionService {
     private final ExhibitionRepository exhibitionRepository;
-    private final ExhibitRepository exhibitRepository;
 
-    public ExhibitionService(ExhibitionRepository exhibitionRepository,
-                             ExhibitRepository exhibitRepository) {
-        this.exhibitionRepository = exhibitionRepository;
-        this.exhibitRepository = exhibitRepository;
-    }
-
+    @Transactional
     public Exhibition createExhibition(Exhibition exhibition) {
         validateExhibition(exhibition);
         if (exhibitionRepository.findById(exhibition.getId()).isPresent())
             throw new IllegalStateException("Exhibition with id " + exhibition.getId() + " already exists");
-        return exhibitionRepository.create(exhibition);
+        return exhibitionRepository.save(exhibition);
     }
 
     public Optional<Exhibition> getExhibition(Long id) {
@@ -36,38 +33,51 @@ public class ExhibitionService {
         return exhibitionRepository.findByType(type);
     }
 
-    public void addExhibitToExhibition(Long exhibitionId, Long exhibitId) {
-        Exhibition exhibition = getExistingExhibition(exhibitionId);
-        Exhibit exhibit = exhibitRepository.findById(exhibitId)
-                .orElseThrow(() -> new IllegalArgumentException("Exhibit not found"));
-        exhibition.addExhibit(exhibit);
+    public List<Exhibition> search(String title, ExhibitionType type) {
+        if (title != null && type != null)
+            return exhibitionRepository.findByTitleContainingIgnoreCaseAndType(title, type);
+        if (title != null)
+            return exhibitionRepository.findByTitleContainingIgnoreCase(title);
+        if (type != null)
+            return exhibitionRepository.findByType(type);
+        return exhibitionRepository.findAll();
     }
 
-    public void addTag(Long exhibitionId, String tag) {
-        Exhibition exhibition = getExistingExhibition(exhibitionId);
-        if (tag == null || tag.isBlank())
-            throw new IllegalArgumentException("Tag cannot be empty");
-        exhibition.addTag(tag);
+    @Transactional
+    public void addTag(Long id, String tag) {
+        Exhibition ex = exhibitionRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Exhibition not found"));
+        ex.addTag(tag);
+        exhibitionRepository.save(ex);
     }
 
-    public void removeTag(Long exhibitionId, String tag) {
-        Exhibition exhibition = getExistingExhibition(exhibitionId);
-        if (tag == null || tag.isBlank())
-            throw new IllegalArgumentException("Tag cannot be empty");
-        exhibition.removeTag(tag);
+    @Transactional
+    public void removeTag(Long id, String tag) {
+        Exhibition ex = exhibitionRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Exhibition not found"));
+        ex.removeTag(tag);
+        exhibitionRepository.save(ex);
     }
 
+    @Transactional
+    public Exhibition update(Long id, Exhibition exhibition) {
+        validateId(id);
+        Exhibition existing = exhibitionRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Exhibition not found"));
+        if (exhibition.getTitle() != null) existing.setTitle(exhibition.getTitle());
+        if (exhibition.getType() != null) existing.setType(exhibition.getType());
+        if (exhibition.getLocation() != null) existing.setLocation(exhibition.getLocation());
+        if (exhibition.getStartDate() != null) existing.setStartDate(exhibition.getStartDate());
+        if (exhibition.getEndDate() != null) existing.setEndDate(exhibition.getEndDate());
+        return exhibitionRepository.save(existing);
+    }
+
+    @Transactional
     public void deleteExhibition(Long id) {
         validateId(id);
         if (exhibitionRepository.findById(id).isEmpty())
-            throw new IllegalArgumentException("Exhibition with id " + id + " not found");
-        exhibitionRepository.delete(id);
-    }
-
-    private Exhibition getExistingExhibition(Long id) {
-        validateId(id);
-        return exhibitionRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Exhibition with id " + id + " not found"));
+            throw new IllegalArgumentException("Exhibition not found");
+        exhibitionRepository.deleteById(id);
     }
 
     private void validateExhibition(Exhibition exhibition) {
@@ -80,6 +90,6 @@ public class ExhibitionService {
     }
 
     private void validateId(Long id) {
-        if (id == null || id <= 0) throw new IllegalArgumentException("Id must be a positive number");
+        if (id == null || id <= 0) throw new IllegalArgumentException("Id must be positive");
     }
 }
