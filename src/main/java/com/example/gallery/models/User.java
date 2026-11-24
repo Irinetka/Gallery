@@ -1,5 +1,7 @@
 package com.example.gallery.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -14,6 +16,7 @@ import java.util.Set;
 @Getter
 @Setter
 @NoArgsConstructor
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "fieldHandler"})
 public abstract class User {
 
     @Id
@@ -27,6 +30,7 @@ public abstract class User {
     private String email;
 
     @Column(nullable = false, length = 100)
+    @JsonIgnore
     private String password;
 
     @Column(nullable = false, length = 20, insertable = false, updatable = false)
@@ -35,10 +39,14 @@ public abstract class User {
     @Column(name = "full_name", length = 100)
     private String fullName;
 
-    @OneToMany(mappedBy = "visitor", cascade = CascadeType.ALL, orphanRemoval = true)
-    private Set<Ticket> tickets = new HashSet<>();
 
     @OneToMany(mappedBy = "visitor", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
+    private Set<Ticket> tickets = new HashSet<>();
+
+
+    @OneToMany(mappedBy = "visitor", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
     private Set<Review> reviews = new HashSet<>();
 
     public User(Long id, String username, String email, String password, UserRole role) {

@@ -1,5 +1,6 @@
 package com.example.gallery.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDate;
@@ -14,6 +15,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "fieldHandler"})
 public class Exhibition {
 
     @Id

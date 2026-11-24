@@ -1,5 +1,7 @@
 package com.example.gallery.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
@@ -13,6 +15,7 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "fieldHandler"})
 public class Review {
 
     @Id
@@ -21,10 +24,12 @@ public class Review {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
+    @JsonIgnore
     private User visitor;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "exhibition_id", nullable = false)
+    @JsonIgnore
     private Exhibition exhibition;
 
     @Column(name = "review_text", nullable = false, length = 1000)

@@ -1,5 +1,6 @@
 package com.example.gallery.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.Getter;
@@ -12,6 +13,7 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "fieldHandler"})
 public class Exhibit {
 
     @Id

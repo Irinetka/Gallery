@@ -6,12 +6,10 @@ import lombok.NoArgsConstructor;
 
 @Entity
 @DiscriminatorValue("ADMIN")
-
 @NoArgsConstructor
 public class AdminUser extends User {
 
-    //  Только аннотация Lombok — она сама создаст пустой конструктор
-    // Ручной конструктор public AdminUser() { super(); } УДАЛЁН
+
 
     public AdminUser(Long id, String username, String email, String password) {
         super(id, username, email, password, UserRole.ADMIN);

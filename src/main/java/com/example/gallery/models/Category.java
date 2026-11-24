@@ -1,5 +1,7 @@
 package com.example.gallery.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
 import java.util.ArrayList;
@@ -13,6 +15,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "fieldHandler"})
 public class Category {
 
     @Id
@@ -23,6 +26,8 @@ public class Category {
     private String name;
 
     @OneToMany(mappedBy = "category", cascade = CascadeType.ALL)
+
+    @JsonIgnore
     private List<Exhibit> exhibits = new ArrayList<>();
 
     //  конструктор с двумя параметрами
