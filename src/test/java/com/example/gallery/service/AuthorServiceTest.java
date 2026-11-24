@@ -1,5 +1,6 @@
 package com.example.gallery.service;
 
+import com.example.gallery.exception.GalleryException;
 import com.example.gallery.models.Author;
 import com.example.gallery.repository.AuthorRepository;
 import org.junit.jupiter.api.Test;
@@ -46,33 +47,33 @@ class AuthorServiceTest {
 
         Author duplicate = new Author(1L, "Vasnetsov Viktor");
 
-        assertThrows(IllegalStateException.class, () -> authorService.createAuthor(duplicate));
+        assertThrows(GalleryException.class, () -> authorService.createAuthor(duplicate));
     }
 
     @Test
     void testCreateAuthorNull() {
-        assertThrows(IllegalArgumentException.class, () -> authorService.createAuthor(null));
+        assertThrows(GalleryException.class, () -> authorService.createAuthor(null));
     }
 
     @Test
     void testCreateAuthorInvalidId() {
         Author author = new Author(-1L, "Aivazovsky Ivan");
 
-        assertThrows(IllegalArgumentException.class, () -> authorService.createAuthor(author));
+        assertThrows(GalleryException.class, () -> authorService.createAuthor(author));
     }
 
     @Test
     void testCreateAuthorEmptyFullName() {
         Author author = new Author(1L, "");
 
-        assertThrows(IllegalArgumentException.class, () -> authorService.createAuthor(author));
+        assertThrows(GalleryException.class, () -> authorService.createAuthor(author));
     }
 
     @Test
     void testCreateAuthorBlankFullName() {
         Author author = new Author(1L, "   ");
 
-        assertThrows(IllegalArgumentException.class, () -> authorService.createAuthor(author));
+        assertThrows(GalleryException.class, () -> authorService.createAuthor(author));
     }
 
     @Test
@@ -96,7 +97,7 @@ class AuthorServiceTest {
 
     @Test
     void testGetAuthorInvalidId() {
-        assertThrows(IllegalArgumentException.class, () -> authorService.getAuthor(-1L));
+        assertThrows(GalleryException.class, () -> authorService.getAuthor(-1L));
     }
 
     @Test
@@ -135,11 +136,11 @@ class AuthorServiceTest {
     void testDeleteAuthorNotFound() {
         when(authorRepository.findById(999L)).thenReturn(Optional.empty());
 
-        assertThrows(IllegalArgumentException.class, () -> authorService.deleteAuthor(999L));
+        assertThrows(GalleryException.class, () -> authorService.deleteAuthor(999L));
     }
 
     @Test
     void testDeleteAuthorInvalidId() {
-        assertThrows(IllegalArgumentException.class, () -> authorService.deleteAuthor(-1L));
+        assertThrows(GalleryException.class, () -> authorService.deleteAuthor(-1L));
     }
 }

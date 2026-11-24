@@ -1,5 +1,9 @@
 package com.example.gallery.service;
 
+import com.example.gallery.exception.BusinessRuleException;
+import com.example.gallery.exception.DuplicateEntityException;
+import com.example.gallery.exception.EntityNotFoundException;
+import com.example.gallery.exception.ValidationException;
 import com.example.gallery.models.Exhibition;
 import com.example.gallery.models.Ticket;
 import com.example.gallery.models.User;
@@ -23,11 +27,14 @@ public class TicketService {
     public Ticket createTicket(Ticket ticket) {
         validateTicket(ticket);
         if (ticketRepository.findById(ticket.getId()).isPresent())
-            throw new IllegalStateException("Ticket with id " + ticket.getId() + " already exists");
+            throw new DuplicateEntityException("Ticket with id " + ticket.getId() + " already exists",
+                    "Choose a free ticket ID");
         User visitor = userRepository.findById(ticket.getVisitor().getId())
-                .orElseThrow(() -> new IllegalArgumentException("Visitor not found"));
+                .orElseThrow(() -> new EntityNotFoundException("Visitor not found",
+                        "The user with this ID does not exist"));
         Exhibition exhibition = exhibitionRepository.findById(ticket.getExhibition().getId())
-                .orElseThrow(() -> new IllegalArgumentException("Exhibition not found"));
+                .orElseThrow(() -> new EntityNotFoundException("Exhibition not found",
+                        "Tickets can be sold only for existing exhibitions"));
         ticket.setVisitor(visitor);
         ticket.setExhibition(exhibition);
         return ticketRepository.save(ticket);
@@ -41,14 +48,14 @@ public class TicketService {
     public List<Ticket> showVisitorTickets(Long visitorId) {
         validateId(visitorId);
         if (userRepository.findById(visitorId).isEmpty())
-            throw new IllegalArgumentException("Visitor not found");
+            throw new EntityNotFoundException("Visitor not found", "Check the user ID");
         return ticketRepository.findByVisitorId(visitorId);
     }
 
     public List<Ticket> showExhibitionTickets(Long exhibitionId) {
         validateId(exhibitionId);
         if (exhibitionRepository.findById(exhibitionId).isEmpty())
-            throw new IllegalArgumentException("Exhibition not found");
+            throw new EntityNotFoundException("Exhibition not found", "Check the exhibition ID");
         return ticketRepository.findByExhibitionId(exhibitionId);
     }
 
@@ -67,7 +74,8 @@ public class TicketService {
     public Ticket update(Long id, Ticket ticket) {
         validateId(id);
         Ticket existing = ticketRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Ticket not found"));
+                .orElseThrow(() -> new EntityNotFoundException("Ticket not found",
+                        "Check the ticket ID; it may have been deleted"));
         if (ticket.getVisitDateTime() != null) existing.setVisitDateTime(ticket.getVisitDateTime());
         if (ticket.getPrice() != null) existing.setPrice(ticket.getPrice());
         return ticketRepository.save(existing);
@@ -77,24 +85,29 @@ public class TicketService {
     public void deleteTicket(Long id) {
         validateId(id);
         if (ticketRepository.findById(id).isEmpty())
-            throw new IllegalArgumentException("Ticket not found");
+            throw new EntityNotFoundException("Ticket not found",
+                    "Nothing to delete: ticket with ID " + id + " does not exist");
         ticketRepository.deleteById(id);
     }
 
     private void validateTicket(Ticket ticket) {
-        if (ticket == null) throw new IllegalArgumentException("Ticket cannot be null");
+        if (ticket == null) throw new ValidationException("Ticket cannot be null",
+                "Provide a complete ticket object");
         validateId(ticket.getId());
         if (ticket.getVisitor() == null || ticket.getVisitor().getId() == null)
-            throw new IllegalArgumentException("Ticket visitor cannot be null");
+            throw new ValidationException("Ticket visitor cannot be null", "Set 'visitor.id'");
         if (ticket.getExhibition() == null || ticket.getExhibition().getId() == null)
-            throw new IllegalArgumentException("Ticket exhibition cannot be null");
+            throw new ValidationException("Ticket exhibition cannot be null", "Set 'exhibition.id'");
         if (ticket.getVisitDateTime() == null)
-            throw new IllegalArgumentException("Visit date and time cannot be null");
+            throw new ValidationException("Visit date and time cannot be null",
+                    "Set 'visitDateTime' in ISO format, e.g. 2026-12-01T14:30");
         if (ticket.getPrice() == null || ticket.getPrice() <= 0)
-            throw new IllegalArgumentException("Ticket price must be positive");
+            throw new BusinessRuleException("Ticket price must be positive",
+                    "Set 'price' as a number greater than 0");
     }
 
     private void validateId(Long id) {
-        if (id == null || id <= 0) throw new IllegalArgumentException("Id must be positive");
+        if (id == null || id <= 0) throw new ValidationException("Id must be positive",
+                "ID must be a positive number");
     }
 }

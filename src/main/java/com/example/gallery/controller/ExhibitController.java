@@ -1,5 +1,6 @@
 package com.example.gallery.controller;
 
+import com.example.gallery.exception.EntityNotFoundException;
 import com.example.gallery.models.Exhibit;
 import com.example.gallery.service.ExhibitService;
 import lombok.RequiredArgsConstructor;
@@ -25,8 +26,14 @@ public class ExhibitController {
 
     @GetMapping("/{id}")
     public ResponseEntity<Exhibit> getById(@PathVariable Long id) {
-        return exhibitService.getExhibit(id).map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+        //   return exhibitService.getExhibit(id).map(ResponseEntity::ok)
+        //        .orElse(ResponseEntity.notFound().build());
+
+        return exhibitService.getExhibit(id)
+                .map(ResponseEntity::ok)
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "Exhibit not found",
+                        "Check the exhibit ID; it may have been deleted"));
     }
 
     @PostMapping

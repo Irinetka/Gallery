@@ -1,5 +1,6 @@
 package com.example.gallery.service;
 
+import com.example.gallery.exception.GalleryException;
 import com.example.gallery.models.Category;
 import com.example.gallery.repository.CategoryRepository;
 import org.junit.jupiter.api.Test;
@@ -46,33 +47,33 @@ class CategoryServiceTest {
 
         Category duplicate = new Category(1L, "Graphics");
 
-        assertThrows(IllegalStateException.class, () -> categoryService.createCategory(duplicate));
+        assertThrows(GalleryException.class, () -> categoryService.createCategory(duplicate));
     }
 
     @Test
     void testCreateCategoryNull() {
-        assertThrows(IllegalArgumentException.class, () -> categoryService.createCategory(null));
+        assertThrows(GalleryException.class, () -> categoryService.createCategory(null));
     }
 
     @Test
     void testCreateCategoryInvalidId() {
         Category category = new Category(-1L, "Painting");
 
-        assertThrows(IllegalArgumentException.class, () -> categoryService.createCategory(category));
+        assertThrows(GalleryException.class, () -> categoryService.createCategory(category));
     }
 
     @Test
     void testCreateCategoryEmptyName() {
         Category category = new Category(1L, "");
 
-        assertThrows(IllegalArgumentException.class, () -> categoryService.createCategory(category));
+        assertThrows(GalleryException.class, () -> categoryService.createCategory(category));
     }
 
     @Test
     void testCreateCategoryBlankName() {
         Category category = new Category(1L, "   ");
 
-        assertThrows(IllegalArgumentException.class, () -> categoryService.createCategory(category));
+        assertThrows(GalleryException.class, () -> categoryService.createCategory(category));
     }
 
     @Test
@@ -96,7 +97,7 @@ class CategoryServiceTest {
 
     @Test
     void testGetCategoryInvalidId() {
-        assertThrows(IllegalArgumentException.class, () -> categoryService.getCategory(-1L));
+        assertThrows(GalleryException.class, () -> categoryService.getCategory(-1L));
     }
 
     @Test
@@ -134,11 +135,11 @@ class CategoryServiceTest {
     void testDeleteCategoryNotFound() {
         when(categoryRepository.findById(999L)).thenReturn(Optional.empty());
 
-        assertThrows(IllegalArgumentException.class, () -> categoryService.deleteCategory(999L));
+        assertThrows(GalleryException.class, () -> categoryService.deleteCategory(999L));
     }
 
     @Test
     void testDeleteCategoryInvalidId() {
-        assertThrows(IllegalArgumentException.class, () -> categoryService.deleteCategory(-1L));
+        assertThrows(GalleryException.class, () -> categoryService.deleteCategory(-1L));
     }
 }

@@ -1,5 +1,8 @@
 package com.example.gallery.service;
 
+import com.example.gallery.exception.DuplicateEntityException;
+import com.example.gallery.exception.EntityNotFoundException;
+import com.example.gallery.exception.ValidationException;
 import com.example.gallery.models.Exhibition;
 import com.example.gallery.models.ExhibitionType;
 import com.example.gallery.repository.ExhibitionRepository;
@@ -18,7 +21,8 @@ public class ExhibitionService {
     public Exhibition createExhibition(Exhibition exhibition) {
         validateExhibition(exhibition);
         if (exhibitionRepository.findById(exhibition.getId()).isPresent())
-            throw new IllegalStateException("Exhibition with id " + exhibition.getId() + " already exists");
+            throw new DuplicateEntityException("Exhibition with id " + exhibition.getId() + " already exists",
+                    "Use a free ID or update the existing exhibition");
         return exhibitionRepository.save(exhibition);
     }
 
@@ -46,7 +50,8 @@ public class ExhibitionService {
     @Transactional
     public void addTag(Long id, String tag) {
         Exhibition ex = exhibitionRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Exhibition not found"));
+                .orElseThrow(() -> new EntityNotFoundException("Exhibition not found",
+                        "Check the exhibition ID before adding a tag"));
         ex.addTag(tag);
         exhibitionRepository.save(ex);
     }
@@ -54,7 +59,8 @@ public class ExhibitionService {
     @Transactional
     public void removeTag(Long id, String tag) {
         Exhibition ex = exhibitionRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Exhibition not found"));
+                .orElseThrow(() -> new EntityNotFoundException("Exhibition not found",
+                        "Check the exhibition ID before removing a tag"));
         ex.removeTag(tag);
         exhibitionRepository.save(ex);
     }
@@ -63,7 +69,8 @@ public class ExhibitionService {
     public Exhibition update(Long id, Exhibition exhibition) {
         validateId(id);
         Exhibition existing = exhibitionRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Exhibition not found"));
+                .orElseThrow(() -> new EntityNotFoundException("Exhibition not found",
+                        "Check the exhibition ID; it may have been deleted"));
         if (exhibition.getTitle() != null) existing.setTitle(exhibition.getTitle());
         if (exhibition.getType() != null) existing.setType(exhibition.getType());
         if (exhibition.getLocation() != null) existing.setLocation(exhibition.getLocation());
@@ -76,20 +83,24 @@ public class ExhibitionService {
     public void deleteExhibition(Long id) {
         validateId(id);
         if (exhibitionRepository.findById(id).isEmpty())
-            throw new IllegalArgumentException("Exhibition not found");
+            throw new EntityNotFoundException("Exhibition not found",
+                    "Nothing to delete: exhibition with ID " + id + " does not exist");
         exhibitionRepository.deleteById(id);
     }
 
     private void validateExhibition(Exhibition exhibition) {
-        if (exhibition == null) throw new IllegalArgumentException("Exhibition cannot be null");
+        if (exhibition == null) throw new ValidationException("Exhibition cannot be null",
+                "Provide a complete exhibition object");
         validateId(exhibition.getId());
         if (exhibition.getTitle() == null || exhibition.getTitle().isBlank())
-            throw new IllegalArgumentException("Exhibition title cannot be empty");
+            throw new ValidationException("Exhibition title cannot be empty", "Fill the 'title' field");
         if (exhibition.getType() == null)
-            throw new IllegalArgumentException("Exhibition type cannot be null");
+            throw new ValidationException("Exhibition type cannot be null",
+                    "Set 'type' to PERMANENT or TEMPORARY");
     }
 
     private void validateId(Long id) {
-        if (id == null || id <= 0) throw new IllegalArgumentException("Id must be positive");
+        if (id == null || id <= 0) throw new ValidationException("Id must be positive",
+                "ID must be a positive number");
     }
 }

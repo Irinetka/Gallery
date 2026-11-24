@@ -1,5 +1,6 @@
 package com.example.gallery.service;
 
+import com.example.gallery.exception.GalleryException;
 import com.example.gallery.models.CustomerUser;
 import com.example.gallery.models.Exhibition;
 import com.example.gallery.models.ExhibitionType;
@@ -69,7 +70,7 @@ class TicketServiceTest {
 
         Ticket ticket = new Ticket(2L, user, exhibition, LocalDateTime.now(), -100.0);
 
-        assertThrows(IllegalArgumentException.class, () -> ticketService.createTicket(ticket));
+        assertThrows(GalleryException.class, () -> ticketService.createTicket(ticket));
     }
 
     @Test

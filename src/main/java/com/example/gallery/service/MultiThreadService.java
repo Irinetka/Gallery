@@ -1,5 +1,6 @@
 package com.example.gallery.service;
 
+import com.example.gallery.exception.ValidationException;
 import com.example.gallery.models.Exhibit;
 import org.springframework.stereotype.Service;
 
@@ -16,6 +17,15 @@ public class MultiThreadService {
      * Использует пул из 4 потоков.
      */
     public List<Exhibit> searchExhibitsInParallel(List<Exhibit> exhibits, String query) {
+        if (exhibits == null) {
+            throw new ValidationException("Exhibits list cannot be null",
+                    "Provide a non-null list of exhibits");
+        }
+        if (query == null || query.isBlank()) {
+            throw new ValidationException("Search query cannot be empty",
+                    "Enter a non-blank search string, e.g. 'wave'");
+        }
+
         ExecutorService executor = Executors.newFixedThreadPool(4);
         try {
             List<Callable<List<Exhibit>>> tasks = exhibits.stream()
@@ -28,13 +38,18 @@ public class MultiThreadService {
             List<Future<List<Exhibit>>> futures = executor.invokeAll(tasks);
             return futures.stream()
                     .map(f -> {
-                        try { return f.get(); }
-                        catch (Exception ex) { return List.<Exhibit>of(); }
+                        try {
+                            return f.get();
+                        } catch (Exception ex) {
+                            return List.<Exhibit>of();
+                        }
                     })
                     .flatMap(List::stream)
                     .collect(Collectors.toList());
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
+            System.out.println("Thread was interrupted: " + e.getMessage()
+                    + " Hint: the operation was cancelled, try again.");
             return List.of();
         } finally {
             executor.shutdown();
@@ -77,6 +92,9 @@ public class MultiThreadService {
             System.out.println("All pool threads completed");
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
+            // Каждое исключение обработано отдельно: прерывание потока
+            System.out.println("Thread was interrupted: " + e.getMessage()
+                    + " Hint: the operation was cancelled, try again.");
         } finally {
             executor.shutdown();
         }
@@ -90,7 +108,8 @@ public class MultiThreadService {
      */
     public void processExhibitsWithLimitedThreads(List<Exhibit> exhibits, int threadCount) {
         if (threadCount <= 0) {
-            throw new IllegalArgumentException("Thread count must be positive");
+            throw new ValidationException("Thread count must be positive",
+                    "Pass threadCount >= 1, e.g. 2 or 4");
         }
 
         ThreadFactory poolFactory = new ThreadFactory() {
@@ -118,6 +137,9 @@ public class MultiThreadService {
             System.out.println("All pool threads completed");
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
+            // Каждое исключение обработано отдельно: прерывание потока
+            System.out.println("Thread was interrupted: " + e.getMessage()
+                    + " Hint: the operation was cancelled, try again.");
         } finally {
             executor.shutdown();
         }

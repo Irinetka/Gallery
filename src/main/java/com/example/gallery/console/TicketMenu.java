@@ -4,6 +4,7 @@ import com.example.gallery.models.Exhibition;
 import com.example.gallery.models.Ticket;
 import com.example.gallery.service.ExhibitionService;
 import com.example.gallery.service.TicketService;
+import com.example.gallery.exception.*;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -42,8 +43,35 @@ public class TicketMenu {
                     case "0" -> { return; }
                     default -> System.out.println("Unknown command.");
                 }
+
+            } catch (ValidationException e) {
+                System.out.println("DATA ERROR: " + e.getMessage());
+                System.out.println("How to fix: " + e.getHint());
+                console.pause();
+            } catch (EntityNotFoundException e) {
+                System.out.println("NOT FOUND: " + e.getMessage());
+                System.out.println("How to fix: " + e.getHint());
+                console.pause();
+            } catch (DuplicateEntityException e) {
+                System.out.println("DUPLICATE: " + e.getMessage());
+                System.out.println("How to fix: " + e.getHint());
+                console.pause();
+            } catch (BusinessRuleException e) {
+                System.out.println("RULE VIOLATION: " + e.getMessage());
+                System.out.println("How to fix: " + e.getHint());
+                console.pause();
+            } catch (InvalidCredentialsException e) {
+                System.out.println("LOGIN FAILED: " + e.getMessage());
+                System.out.println("How to fix: " + e.getHint());
+                console.pause();
+            } catch (AccessDeniedException e) {
+                System.out.println("ACCESS DENIED: " + e.getMessage());
+                System.out.println("How to fix: " + e.getHint());
+                console.pause();
             } catch (IllegalArgumentException | IllegalStateException e) {
-                System.out.println("Error: " + e.getMessage());
+                // Фолбэк для не-собственных исключений (например, DateTimeParseException при вводе даты)
+                System.out.println("Unexpected error: " + e.getMessage());
+                System.out.println("How to fix: check the input format and try again.");
                 console.pause();
             }
         }

@@ -1,5 +1,6 @@
 package com.example.gallery.service;
 
+import com.example.gallery.exception.GalleryException;
 import com.example.gallery.models.CustomerUser;
 import com.example.gallery.models.Exhibition;
 import com.example.gallery.models.ExhibitionType;
@@ -64,7 +65,7 @@ class ReviewServiceTest {
 
         Review review = new Review(2L, user, exhibition, "Too high", 6);
 
-        assertThrows(IllegalArgumentException.class, () -> reviewService.createReview(review));
+        assertThrows(GalleryException.class, () -> reviewService.createReview(review));
     }
 
     @Test
@@ -75,7 +76,7 @@ class ReviewServiceTest {
 
         Review review = new Review(3L, user, exhibition, "Too low", 0);
 
-        assertThrows(IllegalArgumentException.class, () -> reviewService.createReview(review));
+        assertThrows(GalleryException.class, () -> reviewService.createReview(review));
     }
 
     @Test

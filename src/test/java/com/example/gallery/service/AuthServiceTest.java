@@ -1,5 +1,6 @@
 package com.example.gallery.service;
 
+import com.example.gallery.exception.GalleryException;
 import com.example.gallery.models.CustomerUser;
 import com.example.gallery.models.User;
 import com.example.gallery.models.UserRole;
@@ -47,7 +48,7 @@ class AuthServiceTest {
     void testRegisterDuplicateId() {
         when(userRepository.findById(1L)).thenReturn(java.util.Optional.of(new CustomerUser()));
 
-        assertThrows(IllegalStateException.class, () ->
+        assertThrows(GalleryException.class, () ->
                 authService.register(1L, "user2", "user2@example.com", "password123",
                         UserRole.CUSTOMER, null, null));
     }
@@ -57,14 +58,14 @@ class AuthServiceTest {
         when(userRepository.findById(1L)).thenReturn(java.util.Optional.empty());
         when(userRepository.findByUsername("testuser")).thenReturn(java.util.Optional.of(new CustomerUser()));
 
-        assertThrows(IllegalStateException.class, () ->
+        assertThrows(GalleryException.class, () ->
                 authService.register(2L, "testuser", "user2@example.com", "password123",
                         UserRole.CUSTOMER, null, null));
     }
 
     @Test
     void testRegisterEmptyPassword() {
-        assertThrows(IllegalArgumentException.class, () ->
+        assertThrows(GalleryException.class, () ->
                 authService.register(1L, "user", "user@example.com", "",
                         UserRole.CUSTOMER, null, null));
     }
@@ -85,7 +86,7 @@ class AuthServiceTest {
         User user = new CustomerUser(1L, "testuser", "test@example.com", "password123", "Test User");
         when(userRepository.findByUsername("testuser")).thenReturn(java.util.Optional.of(user));
 
-        assertThrows(IllegalArgumentException.class, () ->
+        assertThrows(GalleryException.class, () ->
                 authService.login("testuser", "wrongpassword"));
     }
 
@@ -93,7 +94,7 @@ class AuthServiceTest {
     void testLoginNonExistentUser() {
         when(userRepository.findByUsername("nobody")).thenReturn(java.util.Optional.empty());
 
-        assertThrows(IllegalArgumentException.class, () ->
+        assertThrows(GalleryException.class, () ->
                 authService.login("nobody", "password123"));
     }
 }

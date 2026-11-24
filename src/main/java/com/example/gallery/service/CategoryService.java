@@ -1,5 +1,8 @@
 package com.example.gallery.service;
 
+import com.example.gallery.exception.DuplicateEntityException;
+import com.example.gallery.exception.EntityNotFoundException;
+import com.example.gallery.exception.ValidationException;
 import com.example.gallery.models.Category;
 import com.example.gallery.repository.CategoryRepository;
 import lombok.RequiredArgsConstructor;
@@ -17,7 +20,8 @@ public class CategoryService {
     public Category createCategory(Category category) {
         validateCategory(category);
         if (categoryRepository.findById(category.getId()).isPresent())
-            throw new IllegalStateException("Category with id " + category.getId() + " already exists");
+            throw new DuplicateEntityException("Category with id " + category.getId() + " already exists",
+                    "Use another ID or update the existing category");
         return categoryRepository.save(category);
     }
 
@@ -32,7 +36,8 @@ public class CategoryService {
     public Category updateCategory(Long id, Category category) {
         validateId(id);
         Category existing = categoryRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Category not found"));
+                .orElseThrow(() -> new EntityNotFoundException("Category not found",
+                        "Check the category ID or create it first"));
         if (category.getName() != null) existing.setName(category.getName());
         return categoryRepository.save(existing);
     }
@@ -41,18 +46,22 @@ public class CategoryService {
     public void deleteCategory(Long id) {
         validateId(id);
         if (categoryRepository.findById(id).isEmpty())
-            throw new IllegalArgumentException("Category not found");
+            throw new EntityNotFoundException("Category not found",
+                    "Nothing to delete: category with ID " + id + " does not exist");
         categoryRepository.deleteById(id);
     }
 
     private void validateCategory(Category category) {
-        if (category == null) throw new IllegalArgumentException("Category cannot be null");
+        if (category == null) throw new ValidationException("Category cannot be null",
+                "Provide a category object with id and name");
         validateId(category.getId());
         if (category.getName() == null || category.getName().isBlank())
-            throw new IllegalArgumentException("Category name cannot be empty");
+            throw new ValidationException("Category name cannot be empty",
+                    "Fill the 'name' field (non-blank string)");
     }
 
     private void validateId(Long id) {
-        if (id == null || id <= 0) throw new IllegalArgumentException("Id must be positive");
+        if (id == null || id <= 0) throw new ValidationException("Id must be positive",
+                "ID must be a positive number");
     }
 }

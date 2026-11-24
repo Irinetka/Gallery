@@ -1,5 +1,6 @@
 package com.example.gallery.controller;
 
+import com.example.gallery.exception.EntityNotFoundException;
 import com.example.gallery.models.Review;
 import com.example.gallery.service.ReviewService;
 import lombok.RequiredArgsConstructor;
@@ -22,8 +23,13 @@ public class ReviewController {
 
     @GetMapping("/{id}")
     public ResponseEntity<Review> getById(@PathVariable Long id) {
-        return reviewService.getReview(id).map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+//        return reviewService.getReview(id).map(ResponseEntity::ok)
+//                .orElse(ResponseEntity.notFound().build());
+        return reviewService.getReview(id)
+                .map(ResponseEntity::ok)
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "Review not found",
+                        "Check the Review ID; it may have been deleted"));
     }
 
     @PostMapping

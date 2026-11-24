@@ -1,5 +1,6 @@
 package com.example.gallery.service;
 
+import com.example.gallery.exception.GalleryException;
 import com.example.gallery.models.CustomerUser;
 import com.example.gallery.models.User;
 import com.example.gallery.models.UserRole;
@@ -50,33 +51,33 @@ class UserServiceTest {
 
         User user2 = new CustomerUser(1L, "user2", "user2@example.com", "password123", "User 2");
 
-        assertThrows(IllegalStateException.class, () -> userService.createUser(user2));
+        assertThrows(GalleryException.class, () -> userService.createUser(user2));
     }
 
     @Test
     void testCreateUserNull() {
-        assertThrows(IllegalArgumentException.class, () -> userService.createUser(null));
+        assertThrows(GalleryException.class, () -> userService.createUser(null));
     }
 
     @Test
     void testCreateUserInvalidId() {
         User user = new CustomerUser(-1L, "user", "user@example.com", "password123", "User");
 
-        assertThrows(IllegalArgumentException.class, () -> userService.createUser(user));
+        assertThrows(GalleryException.class, () -> userService.createUser(user));
     }
 
     @Test
     void testCreateUserEmptyUsername() {
         User user = new CustomerUser(1L, "", "user@example.com", "password123", "User");
 
-        assertThrows(IllegalArgumentException.class, () -> userService.createUser(user));
+        assertThrows(GalleryException.class, () -> userService.createUser(user));
     }
 
     @Test
     void testCreateUserEmptyEmail() {
         User user = new CustomerUser(1L, "user", "", "password123", "User");
 
-        assertThrows(IllegalArgumentException.class, () -> userService.createUser(user));
+        assertThrows(GalleryException.class, () -> userService.createUser(user));
     }
 
     @Test
@@ -101,7 +102,7 @@ class UserServiceTest {
 
     @Test
     void testGetUserInvalidId() {
-        assertThrows(IllegalArgumentException.class, () -> userService.getUser(-1L));
+        assertThrows(GalleryException.class, () -> userService.getUser(-1L));
     }
 
     @Test
@@ -131,11 +132,11 @@ class UserServiceTest {
     void testDeleteUserNotFound() {
         when(userRepository.findById(999L)).thenReturn(Optional.empty());
 
-        assertThrows(IllegalArgumentException.class, () -> userService.deleteUser(999L));
+        assertThrows(GalleryException.class, () -> userService.deleteUser(999L));
     }
 
     @Test
     void testDeleteUserInvalidId() {
-        assertThrows(IllegalArgumentException.class, () -> userService.deleteUser(-1L));
+        assertThrows(GalleryException.class, () -> userService.deleteUser(-1L));
     }
 }

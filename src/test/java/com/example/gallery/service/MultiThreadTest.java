@@ -1,5 +1,6 @@
 package com.example.gallery.service;
 
+import com.example.gallery.exception.GalleryException;
 import com.example.gallery.models.Author;
 import com.example.gallery.models.Category;
 import com.example.gallery.models.Exhibit;
@@ -77,9 +78,9 @@ class MultiThreadTest {
     @Test
     @DisplayName("Пул с неположительным числом потоков")
     void testInvalidThreadCount() {
-        assertThrows(IllegalArgumentException.class, () ->
+        assertThrows(GalleryException.class, () ->
                 multiThreadService.processExhibitsWithLimitedThreads(createExhibits(1), 0));
-        assertThrows(IllegalArgumentException.class, () ->
+        assertThrows(GalleryException.class, () ->
                 multiThreadService.processExhibitsWithLimitedThreads(createExhibits(1), -1));
     }
 

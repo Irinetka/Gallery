@@ -1,5 +1,6 @@
 package com.example.gallery.service;
 
+import com.example.gallery.exception.GalleryException;
 import com.example.gallery.models.Author;
 import com.example.gallery.models.Category;
 import com.example.gallery.models.Exhibit;
@@ -98,7 +99,7 @@ class ExhibitServiceTest {
 
     @Test
     void testSearchExhibitsEmptyQuery() {
-        assertThrows(IllegalArgumentException.class, () ->
+        assertThrows(GalleryException.class, () ->
                 exhibitService.searchExhibitsWithMultithreading(""));
     }
 
@@ -147,6 +148,6 @@ class ExhibitServiceTest {
 
         exhibitService.deleteExhibit(1L);
 
-        verify(exhibitRepository, times(1)).deleteById(1L);  // ✅ Проверяем вызов метода
+        verify(exhibitRepository, times(1)).deleteById(1L);
     }
 }
